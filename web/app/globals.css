@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Interactive hover button — cursor-following spotlight (position set via inline vars) */
+.interactive-hover-button-spotlight {
+  background: radial-gradient(
+    400px circle at var(--spotlight-x, 0) var(--spotlight-y, 0),
+    rgba(197, 160, 89, 0.25),
+    transparent 80%
+  );
+}
+
+html,
+body,
+:root {
+  height: 100%;
+}
+
+body {
+  background-color: #050505;
+  color: #ffffff;
+}
+
+/* Marquee: one sliding track with duplicated content, move by 50% for seamless loop */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee-scroll var(--duration, 40s) linear infinite;
+}
+
+.marquee-track-vertical {
+  animation: marquee-scroll-vertical var(--duration, 40s) linear infinite;
+}
+
+/* Course track cards — gradient hover (identity: accentGold #C5A059, background #050505) */
+.course-track-box {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 200px;
+  transition: 0.5s;
+}
+
+.course-track-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  width: 50%;
+  height: 100%;
+  border-radius: 1.5rem;
+  transform: skewX(15deg);
+  transition: 0.5s;
+  z-index: 0;
+}
+
+.course-track-box::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  width: 50%;
+  height: 100%;
+  border-radius: 1.5rem;
+  transform: skewX(15deg);
+  transition: 0.5s;
+  filter: blur(30px);
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.course-track-box:hover::before,
+.course-track-box:hover::after {
+  transform: skewX(0deg);
+  left: 0.75rem;
+  width: calc(100% - 1.5rem);
+}
+
+.course-track-box:nth-child(1)::before,
+.course-track-box:nth-child(1)::after {
+  background: linear-gradient(315deg, #9a7b3d, #c5a059);
+}
+
+.course-track-box:nth-child(2)::before,
+.course-track-box:nth-child(2)::after {
+  background: linear-gradient(315deg, #c5a059, #d4b876);
+}
+
+.course-track-box:nth-child(3)::before,
+.course-track-box:nth-child(3)::after {
+  background: linear-gradient(315deg, #8b6914, #c5a059);
+}
+
+.course-track-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 1.5rem;
+}
+
+.course-track-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: 0.5s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.course-track-glow::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: 0.5s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.course-track-box:hover .course-track-glow::before {
+  top: -1.5rem;
+  left: 1.5rem;
+  width: 4rem;
+  height: 4rem;
+  opacity: 1;
+  animation: course-track-float 2s ease-in-out infinite;
+}
+
+.course-track-box:hover .course-track-glow::after {
+  bottom: -1.5rem;
+  right: 1.5rem;
+  width: 4rem;
+  height: 4rem;
+  opacity: 1;
+  animation: course-track-float 2s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+@keyframes course-track-float {
+  0%, 100% {
+    transform: translateY(4px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.course-track-content {
+  position: relative;
+  z-index: 1;
+  left: 0;
+  padding: 1.5rem;
+  background: rgba(5, 5, 5, 0.85);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.85);
+  transition: 0.5s;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.course-track-box:hover .course-track-content {
+  left: -0.5rem;
+  padding: 2rem 1.5rem;
+  border-color: rgba(197, 160, 89, 0.3);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
+}
+
