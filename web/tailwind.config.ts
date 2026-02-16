@@ -2,21 +2,20 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./pages/**/*.{ts,tsx}"
+    "./src/app/**/*.{ts,tsx}",
+    "./src/components/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        background: "#050505",
-        accentGold: "#C5A059",
-        textLight: "#FFFFFF"
+        background: "#1c1c1e",
+        accentGold: "#c9a86e",
+        textLight: "#FFFFFF",
       },
     },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;
-
