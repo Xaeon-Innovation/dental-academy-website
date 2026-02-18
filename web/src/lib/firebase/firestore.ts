@@ -9,4 +9,5 @@ export const COLLECTIONS = {
   blog: "blog",
   categories: "categories",
   settings: "settings",
+  instructors: "instructors",
 } as const;
