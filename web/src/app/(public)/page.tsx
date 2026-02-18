@@ -1,7 +1,10 @@
+import Image from "next/image";
+import Link from "next/link";
 import HeroSequence from "@/components/HeroSequence";
 import Testimonials from "@/components/Testimonials";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { TextReveal } from "@/components/TextReveal";
+import { INSTRUCTORS } from "@/lib/constants/instructors";
 
 export default function HomePage() {
   return (
@@ -30,7 +33,15 @@ export default function HomePage() {
               more clarity, more control, and more repeatable outcomes.
             </p>
           </div>
-          <div className="h-64 rounded-3xl bg-gradient-to-br from-accentGold/10 via-white/5 to-black/60 shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80" />
+          <div className="relative h-64 overflow-hidden rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80">
+            <Image
+              src="/images/philosophy/philosophy-image.png"
+              alt="Kaleidoscope Dental Academy - Precision-driven implant dentistry"
+              fill
+              className="object-cover object-left"
+              priority
+            />
+          </div>
         </div>
       </section>
 
@@ -77,6 +88,61 @@ export default function HomePage() {
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Meet our instructors */}
+      <section
+        id="instructors"
+        className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
+      >
+        <div className="mx-auto max-w-6xl">
+          <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+            Meet our instructors
+          </TextReveal>
+          <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+            <TextReveal>Expert faculty. Real-world focus.</TextReveal>
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-base">
+            Learn from clinicians and educators who combine years of practice with a commitment to structured, hands-on training.
+          </p>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {INSTRUCTORS.map((instructor) => (
+              <article
+                key={instructor.name}
+                className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04]"
+              >
+                <div className="aspect-[3/4] overflow-hidden rounded-t-2xl bg-white/5">
+                  <Image
+                    src={instructor.imageUrl}
+                    alt={instructor.name}
+                    width={320}
+                    height={427}
+                    className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-5">
+                  <h3 className="font-semibold tracking-tight text-white">
+                    {instructor.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-accentGold/90">
+                    {instructor.credentials}
+                  </p>
+                  <p className="mt-2 text-sm leading-snug text-white/60">
+                    {instructor.tagline}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="mt-10 text-center">
+            <Link
+              href="/courses"
+              className="inline-block text-xs font-semibold uppercase tracking-[0.18em] text-accentGold transition hover:text-accentGold/80"
+            >
+              See instructors on courses →
+            </Link>
           </div>
         </div>
       </section>
