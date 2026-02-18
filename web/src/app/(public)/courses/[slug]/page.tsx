@@ -11,18 +11,27 @@ import {
   ArrowRight,
   MessageCircle,
 } from "lucide-react";
-import { getCourseBySlug, getCourseDetail, COURSES } from "@/lib/constants/courses";
+import { getCourseBySlug, getCourses } from "@/lib/actions/course";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export default async function CourseDetailPage({ params }: Props) {
   const { slug } = await params;
-  const course = getCourseBySlug(slug);
-  const detail = getCourseDetail(slug);
+  const course = await getCourseBySlug(slug);
 
-  if (!course) notFound();
+  if (!course || course.status !== "open") {
+    notFound();
+  }
 
-  const relatedCourses = COURSES.filter((c) => c.slug !== slug);
+  // Get related courses
+  const allCourses = await getCourses();
+  const relatedCourses = (course.relatedCourseSlugs || [])
+    .map((relatedSlug) => allCourses.find((c) => c.slug === relatedSlug))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined && c.status === "open")
+    .slice(0, 2); // Limit to 2 related courses
+
+  // Use course data directly (it includes all detail fields)
+  const detail = course;
 
   return (
     <div className="min-h-screen bg-background text-white">
@@ -83,15 +92,19 @@ export default async function CourseDetailPage({ params }: Props) {
                   </div>
                 )}
                 <div className="mt-4 flex items-center gap-2">
-                  <span className="rounded-full border border-accentGold/50 px-3 py-1 text-[0.65rem] uppercase tracking-wider text-accentGold">
-                    {course.cpd}
-                  </span>
-                  <span className="text-xs text-white/50">Provider: {course.provider}</span>
+                  {course.cpd && (
+                    <span className="rounded-full border border-accentGold/50 px-3 py-1 text-[0.65rem] uppercase tracking-wider text-accentGold">
+                      {course.cpd}
+                    </span>
+                  )}
+                  {course.provider && (
+                    <span className="text-xs text-white/50">Provider: {course.provider}</span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {detail ? (
+            {detail.overview && detail.overview.length > 0 ? (
               <>
                 {/* Course Overview */}
                 <section className="mt-10">
@@ -104,7 +117,11 @@ export default async function CourseDetailPage({ params }: Props) {
                     ))}
                   </div>
                 </section>
+              </>
+            ) : null}
 
+            {detail.learningPoints && detail.learningPoints.length > 0 ? (
+              <>
                 {/* What You Will Learn */}
                 <section className="mt-10">
                   <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
@@ -121,16 +138,20 @@ export default async function CourseDetailPage({ params }: Props) {
                     ))}
                   </ul>
                 </section>
+              </>
+            ) : null}
 
+            {detail.agenda && detail.agenda.length > 0 ? (
+              <>
                 {/* Course Agenda */}
                 <section className="mt-10">
                   <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
                     Course Agenda
                   </h2>
                   <div className="mt-4 space-y-4">
-                    {detail.agenda.map((day) => (
+                    {detail.agenda.map((day, index) => (
                       <div
-                        key={day.day}
+                        key={`${day.day}-${day.date}-${index}`}
                         className="rounded-xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-white/10"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -154,7 +175,7 @@ export default async function CourseDetailPage({ params }: Props) {
                 </section>
 
                 {/* Requirements */}
-                {detail.requirements.length > 0 && (
+                {detail.requirements && detail.requirements.length > 0 && (
                   <section className="mt-10">
                     <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
                       Requirements
@@ -173,81 +194,85 @@ export default async function CourseDetailPage({ params }: Props) {
                 )}
 
                 {/* Instructors */}
-                <section className="mt-10">
-                  <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
-                    {detail.instructors && detail.instructors.length > 1 ? "Instructors" : "Instructor"}
-                  </h2>
-                  {detail.instructors && detail.instructors.length > 0 ? (
-                    <div className="mt-4 space-y-4">
-                      {detail.instructors.map((instructor, idx) => (
-                        <div
-                          key={idx}
-                          className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start"
-                        >
-                          {instructor.imageUrl ? (
-                            <Image
-                              src={instructor.imageUrl}
-                              alt={instructor.name}
-                              width={80}
-                              height={80}
-                              className="h-20 w-20 shrink-0 rounded-full object-cover bg-white/5"
-                            />
-                          ) : (
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
-                              {instructor.name.charAt(0)}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-medium text-white">{instructor.name}</p>
-                            <p className="mt-0.5 text-xs text-accentGold/90">
-                              {instructor.credentials}
-                            </p>
-                            <p className="mt-3 text-sm leading-relaxed text-white/70">
-                              {instructor.bio}
-                            </p>
-                            {instructor.badges.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {instructor.badges.map((badge) => (
-                                  <span
-                                    key={badge}
-                                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
-                                  >
-                                    {badge}
-                                  </span>
-                                ))}
+                {(detail.instructors && detail.instructors.length > 0) || detail.instructor ? (
+                  <section className="mt-10">
+                    <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
+                      {detail.instructors && detail.instructors.length > 1 ? "Instructors" : "Instructor"}
+                    </h2>
+                    {detail.instructors && detail.instructors.length > 0 ? (
+                      <div className="mt-4 space-y-4">
+                        {detail.instructors.map((instructor, idx) => (
+                          <div
+                            key={idx}
+                            className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start"
+                          >
+                            {instructor.imageUrl ? (
+                              <Image
+                                src={instructor.imageUrl}
+                                alt={instructor.name}
+                                width={80}
+                                height={80}
+                                className="h-20 w-20 shrink-0 rounded-full object-cover bg-white/5"
+                              />
+                            ) : (
+                              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
+                                {instructor.name.charAt(0)}
                               </div>
                             )}
+                            <div className="min-w-0">
+                              <p className="font-medium text-white">{instructor.name}</p>
+                              <p className="mt-0.5 text-xs text-accentGold/90">
+                                {instructor.credentials}
+                              </p>
+                              <p className="mt-3 text-sm leading-relaxed text-white/70">
+                                {instructor.bio}
+                              </p>
+                              {instructor.badges && instructor.badges.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {instructor.badges.map((badge) => (
+                                    <span
+                                      key={badge}
+                                      className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                                    >
+                                      {badge}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
-                        {detail.instructor.name.charAt(0)}
+                        ))}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-white">{detail.instructor.name}</p>
-                        <p className="mt-0.5 text-xs text-accentGold/90">
-                          {detail.instructor.credentials}
-                        </p>
-                        <p className="mt-3 text-sm leading-relaxed text-white/70">
-                          {detail.instructor.bio}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {detail.instructor.badges.map((badge) => (
-                            <span
-                              key={badge}
-                              className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
-                            >
-                              {badge}
-                            </span>
-                          ))}
+                    ) : detail.instructor ? (
+                      <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
+                          {detail.instructor.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-white">{detail.instructor.name}</p>
+                          <p className="mt-0.5 text-xs text-accentGold/90">
+                            {detail.instructor.credentials}
+                          </p>
+                          <p className="mt-3 text-sm leading-relaxed text-white/70">
+                            {detail.instructor.bio}
+                          </p>
+                          {detail.instructor.badges && detail.instructor.badges.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {detail.instructor.badges.map((badge) => (
+                                <span
+                                  key={badge}
+                                  className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                                >
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
-                </section>
+                    ) : null}
+                  </section>
+                ) : null}
 
                 {/* Related Courses */}
                 {relatedCourses.length > 0 && (
@@ -284,14 +309,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   </section>
                 )}
               </>
-            ) : (
-              <section className="mt-10">
-                <p className="text-white/70">{course.description}</p>
-                <p className="mt-2 text-xs text-white/50">
-                  Course Provider: {course.provider}
-                </p>
-              </section>
-            )}
+            ) : null}
           </div>
 
           {/* Sidebar — Secure Your Spot */}

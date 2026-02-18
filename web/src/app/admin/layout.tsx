@@ -27,6 +27,9 @@ export default function AdminLayout({
           <Link href="/admin/categories" className="block hover:text-white">
             Categories
           </Link>
+          <Link href="/admin/instructors" className="block hover:text-white">
+            Instructors
+          </Link>
           <Link href="/admin/settings" className="block hover:text-white">
             Settings
           </Link>
