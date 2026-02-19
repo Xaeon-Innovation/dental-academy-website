@@ -1,6 +1,7 @@
 export interface SiteSettings {
   siteName?: string;
   contactEmail?: string;
+  adminEmails?: string[]; // List of emails allowed to access admin dashboard
   socialLinks?: {
     twitter?: string;
     linkedin?: string;
