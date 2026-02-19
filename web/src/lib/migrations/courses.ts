@@ -1,6 +1,6 @@
 "use server";
 
-import { COURSES, courseDetails, getCourseDetail } from "@/lib/constants/courses";
+import { COURSES, getCourseDetail } from "@/lib/constants/courses";
 import { createCourse } from "@/lib/actions/course";
 import type { CourseFormData } from "@/lib/validations/course";
 
