@@ -12,6 +12,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { getCourseBySlug, getCourses } from "@/lib/actions/course";
+import { RegisterNowButton } from "@/components/RegisterNowButton";
+import { SpotsLeft } from "@/components/SpotsLeft";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -320,6 +322,11 @@ export default async function CourseDetailPage({ params }: Props) {
                 <p className="mt-0.5 text-xs text-white/60">
                   Limited seats available for this intake.
                 </p>
+                {detail?.maxParticipants && (
+                  <div className="mt-2">
+                    <SpotsLeft courseId={course.id} maxParticipants={detail.maxParticipants} />
+                  </div>
+                )}
               </div>
               <div className="p-5">
                 {detail?.pricing ? (
@@ -382,13 +389,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     </p>
                   </>
                 )}
-                <Link
-                  href={`/courses/${slug}/register`}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-accentGold py-3.5 text-sm font-semibold uppercase tracking-wider text-background transition hover:bg-accentGold/90"
-                >
-                  Register now
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
+                <RegisterNowButton courseSlug={slug} />
                 <p className="mt-4 text-center text-xs text-white/50">
                   By registering, you agree to our{" "}
                   <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">

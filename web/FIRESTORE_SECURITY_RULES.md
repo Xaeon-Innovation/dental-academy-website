@@ -43,7 +43,12 @@ service cloud.firestore {
     // Public write for registrations (form submissions)
     match /registrations/{registrationId} {
       allow read: if false; // Only server-side reads
-      allow create: if true; // Allow form submissions
+      allow create: if true; // Allow form submissions (authenticated or anonymous)
+    }
+    
+    // Student profiles: each user can read/write only their own document
+    match /students/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
     // Admin-only collections

@@ -15,6 +15,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { courseSchema, type CourseFormData } from "@/lib/validations/course";
 import type { Course, CourseCreatePayload, CourseUpdatePayload } from "@/types/course";
 
@@ -78,16 +79,16 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 
 export async function getCourseById(id: string): Promise<Course | null> {
   try {
-    const docRef = doc(db, COLLECTIONS.courses, id);
-    const docSnap = await getDoc(docRef);
+    const ref = doc(db, COLLECTIONS.courses, id);
+    const snap = await getDoc(ref);
     
-    if (!docSnap.exists()) {
+    if (!snap.exists()) {
       return null;
     }
     
     return {
-      id: docSnap.id,
-      ...convertTimestamps(docSnap.data()),
+      id: snap.id,
+      ...convertTimestamps(snap.data()),
     } as Course;
   } catch (err) {
     console.error("Error fetching course by id:", err);
@@ -95,17 +96,35 @@ export async function getCourseById(id: string): Promise<Course | null> {
   }
 }
 
-export async function createCourse(
-  data: CourseFormData
-): Promise<{ success: true; id: string } | { success: false; error: string }> {
+export async function getEnrollmentCount(courseId: string): Promise<number> {
   try {
-    // Validate data
+    const adminDb = getAdminDb();
+    if (adminDb) {
+      // Firestore doesn't support !=, so we get all and filter
+      const snapshot = await adminDb
+        .collection(COLLECTIONS.registrations)
+        .where("courseId", "==", courseId)
+        .get();
+      return snapshot.docs.filter((d) => d.data().status !== "cancelled").length;
+    }
+    const ref = collection(db, COLLECTIONS.registrations);
+    const q = query(ref, where("courseId", "==", courseId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.filter((d) => d.data().status !== "cancelled").length;
+  } catch (err) {
+    console.error("Error counting enrollments:", err);
+    return 0;
+  }
+}
+
+export async function createCourse(data: CourseFormData): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  try {
     const validated = courseSchema.parse(data);
     
     // Check if slug already exists
     const existing = await getCourseBySlug(validated.slug);
     if (existing) {
-      return { success: false, error: "A course with this slug already exists" };
+      return { success: false, error: "A course with this slug already exists." };
     }
     
     const payload = omitUndefined({
@@ -114,12 +133,15 @@ export async function createCourse(
       updatedAt: serverTimestamp(),
     });
     
-    const ref = await addDoc(collection(db, COLLECTIONS.courses), payload);
+    const ref = await addDoc(
+      collection(db, COLLECTIONS.courses),
+      payload
+    );
     
     return { success: true, id: ref.id };
   } catch (err) {
     if (err instanceof Error && err.name === "ZodError") {
-      return { success: false, error: "Validation failed: " + err.message };
+      return { success: false, error: "Invalid course data." };
     }
     const message = err instanceof Error ? err.message : "Failed to create course";
     return { success: false, error: message };
@@ -128,55 +150,39 @@ export async function createCourse(
 
 export async function updateCourse(
   id: string,
-  data: Partial<CourseFormData>
+  data: CourseFormData
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
-    // Check if course exists
-    const existing = await getCourseById(id);
-    if (!existing) {
-      return { success: false, error: "Course not found" };
+    const validated = courseSchema.parse(data);
+    
+    // Check if slug exists for another course
+    const existing = await getCourseBySlug(validated.slug);
+    if (existing && existing.id !== id) {
+      return { success: false, error: "A course with this slug already exists." };
     }
     
-    // If slug is being updated, check if new slug is available
-    if (data.slug && data.slug !== existing.slug) {
-      const slugExists = await getCourseBySlug(data.slug);
-      if (slugExists) {
-        return { success: false, error: "A course with this slug already exists" };
-      }
-    }
-    
-    // Validate data if provided
-    let validated = data;
-    if (Object.keys(data).length > 0) {
-      const fullData = { ...existing, ...data };
-      validated = courseSchema.partial().parse(fullData);
-    }
-    
+    const ref = doc(db, COLLECTIONS.courses, id);
     const payload = omitUndefined({
       ...validated,
       updatedAt: serverTimestamp(),
     });
     
-    const docRef = doc(db, COLLECTIONS.courses, id);
-    await updateDoc(docRef, payload);
+    await updateDoc(ref, payload);
     
     return { success: true };
   } catch (err) {
     if (err instanceof Error && err.name === "ZodError") {
-      return { success: false, error: "Validation failed: " + err.message };
+      return { success: false, error: "Invalid course data." };
     }
     const message = err instanceof Error ? err.message : "Failed to update course";
     return { success: false, error: message };
   }
 }
 
-export async function deleteCourse(
-  id: string
-): Promise<{ success: true } | { success: false; error: string }> {
+export async function deleteCourse(id: string): Promise<{ success: true } | { success: false; error: string }> {
   try {
-    const docRef = doc(db, COLLECTIONS.courses, id);
-    await deleteDoc(docRef);
-    
+    const ref = doc(db, COLLECTIONS.courses, id);
+    await deleteDoc(ref);
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to delete course";

@@ -5,6 +5,7 @@ import { X, Plus, Eye, EyeOff, Sparkles, Ban, CheckCircle, Trash2 } from "lucide
 import {
   getSettings,
   addAdminEmail,
+  addExistingUserAsAdmin,
   removeAdminEmail,
 } from "@/lib/actions/settings";
 
@@ -15,6 +16,8 @@ export default function AdminEmailManager() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [addingExisting, setAddingExisting] = useState(false);
+  const [existingEmail, setExistingEmail] = useState("");
   const [creatingTest, setCreatingTest] = useState(false);
   const [userStatuses, setUserStatuses] = useState<Record<string, boolean>>({});
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
@@ -106,6 +109,31 @@ export default function AdminEmailManager() {
     if (score <= 3) return { strength: "weak", score };
     if (score <= 5) return { strength: "medium", score };
     return { strength: "strong", score };
+  };
+
+  const handleAddExistingUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!existingEmail.trim()) {
+      setError("Please enter an email address");
+      return;
+    }
+    setAddingExisting(true);
+    try {
+      const result = await addExistingUserAsAdmin(existingEmail.trim());
+      if (result.success) {
+        setSuccess(`"${existingEmail.trim()}" added to admin list. They can now sign in.`);
+        setExistingEmail("");
+        await loadSettings();
+      } else {
+        setError(result.error || "Failed to add admin email");
+      }
+    } catch (err) {
+      setError("Failed to add admin email");
+    } finally {
+      setAddingExisting(false);
+    }
   };
 
   const handleAddEmail = async (e: React.FormEvent) => {
@@ -207,9 +235,20 @@ export default function AdminEmailManager() {
         );
         await loadSettings();
       } else if (!deleteResult.success && removeResult.success) {
-        setError(
-          `Removed from admin list, but failed to delete Firebase account: ${deleteResult.message || deleteResult.error}`
-        );
+        // Removal from admin list succeeded; only Firebase delete failed
+        const isAdminSdkNotConfigured =
+          deleteResult.error === "Admin SDK required" ||
+          (typeof deleteResult.message === "string" &&
+            deleteResult.message.includes("Firebase Admin SDK must be configured"));
+        if (isAdminSdkNotConfigured) {
+          setSuccess(
+            `Removed "${email}" from admin list. Their Firebase account was not deleted (Admin SDK not configured). To delete the account, set up Firebase Admin SDK (see FIREBASE_ADMIN_SETUP.md) or remove the user in Firebase Console → Authentication → Users.`
+          );
+        } else {
+          setError(
+            `Removed from admin list, but could not delete Firebase account: ${deleteResult.message || deleteResult.error}`
+          );
+        }
         await loadSettings();
       } else {
         const removeError = removeResult.success ? "" : removeResult.error;
@@ -542,6 +581,36 @@ export default function AdminEmailManager() {
           {adding ? "Creating..." : "Add Admin User"}
         </button>
       </form>
+
+      {/* Add existing Firebase user (email only) */}
+      <div className="rounded-lg border border-white/10 bg-white/5 p-6 mt-4">
+        <p className="text-sm text-white/70 mb-3">
+          User already created in Firebase Console? Add their email to the admin list so they can access the dashboard.
+        </p>
+        <form onSubmit={handleAddExistingUser} className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label htmlFor="existing-email" className="block text-sm font-medium text-white/80 mb-1">
+              Existing user email
+            </label>
+            <input
+              id="existing-email"
+              type="email"
+              value={existingEmail}
+              onChange={(e) => setExistingEmail(e.target.value)}
+              placeholder="user@example.com"
+              disabled={addingExisting}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white placeholder-white/40 focus:border-accentGold/50 focus:outline-none focus:ring-2 focus:ring-accentGold/20 transition disabled:opacity-50"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={addingExisting || !existingEmail.trim()}
+            className="rounded-lg border border-accentGold/50 bg-accentGold/10 px-4 py-2 text-sm font-medium text-accentGold transition hover:border-accentGold hover:bg-accentGold/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {addingExisting ? "Adding..." : "Add to admin list"}
+          </button>
+        </form>
+      </div>
 
       {/* Messages */}
       {error && (

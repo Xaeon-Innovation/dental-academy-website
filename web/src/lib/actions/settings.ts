@@ -9,7 +9,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
-import type { SiteSettings } from "@/types/settings";
+import type { SiteSettings, HomeSettings } from "@/types/settings";
 
 const SETTINGS_DOC_ID = "main";
 
@@ -50,6 +50,11 @@ export async function getSettings(): Promise<SiteSettings> {
   }
 }
 
+export async function getHomeSettings(): Promise<HomeSettings | null> {
+  const settings = await getSettings();
+  return (settings.home as HomeSettings) ?? null;
+}
+
 export async function updateSettings(
   updates: Partial<SiteSettings>
 ): Promise<{ success: true } | { success: false; error: string }> {
@@ -74,6 +79,23 @@ export async function updateSettings(
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update settings";
+    return { success: false, error: message };
+  }
+}
+
+export async function updateHomeSettings(
+  updates: Partial<HomeSettings>
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const settings = await getSettings();
+    const currentHome = (settings.home as HomeSettings) ?? {};
+    const nextHome: HomeSettings = {
+      ...currentHome,
+      ...updates,
+    };
+    return await updateSettings({ home: nextHome });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update home settings";
     return { success: false, error: message };
   }
 }
@@ -141,6 +163,32 @@ export async function addAdminEmail(
     // Add email to list
     const updatedEmails = [...adminEmails, normalizedEmail];
 
+    return await updateSettings({ adminEmails: updatedEmails });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to add admin email";
+    return { success: false, error: message };
+  }
+}
+
+/** Add an existing Firebase Auth user to the admin list (email only). Use when the user was created in Firebase Console. */
+export async function addExistingUserAsAdmin(
+  email: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { success: false, error: "Invalid email format" };
+    }
+
+    const settings = await getSettings();
+    const adminEmails = settings.adminEmails || [];
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (adminEmails.includes(normalizedEmail)) {
+      return { success: false, error: "Email already in admin list" };
+    }
+
+    const updatedEmails = [...adminEmails, normalizedEmail];
     return await updateSettings({ adminEmails: updatedEmails });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to add admin email";

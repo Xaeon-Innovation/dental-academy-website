@@ -1,3 +1,13 @@
+export interface HomeSettings {
+  philosophyHeading?: string;
+  philosophyTitle?: string;
+  philosophyBody?: string;
+  philosophyImageUrl?: string;
+  ctaTitle?: string;
+  ctaBody?: string;
+  ctaBackgroundImageUrl?: string;
+}
+
 export interface SiteSettings {
   siteName?: string;
   contactEmail?: string;
@@ -9,5 +19,7 @@ export interface SiteSettings {
     instagram?: string;
   };
   featureFlags?: Record<string, boolean>;
+  /** Optional home page content configuration */
+  home?: HomeSettings;
   [key: string]: unknown;
 }

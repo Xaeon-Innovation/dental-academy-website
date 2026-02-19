@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "firebase": "^11.0.0",
+    "firebase-admin": "^13.6.1",
     "gsap": "latest",
     "lucide-react": "^0.564.0",
     "next": "latest",

@@ -1,6 +1,7 @@
 import {
   getAuth,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   type User,
@@ -10,5 +11,5 @@ import { app } from "./config";
 
 export const auth = getAuth(app);
 
-export { signInWithEmailAndPassword, signOut, onAuthStateChanged };
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
 export type { User, UserCredential };
