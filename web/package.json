@@ -12,10 +12,12 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "cobe": "^0.6.5",
     "firebase": "^11.0.0",
     "firebase-admin": "^13.6.1",
     "gsap": "latest",
     "lucide-react": "^0.564.0",
+    "motion": "^12.34.2",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
