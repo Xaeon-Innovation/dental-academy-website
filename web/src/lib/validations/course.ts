@@ -38,7 +38,7 @@ export const courseSchema = z.object({
   cpd: z.string().optional(),
   provider: z.string().optional(),
   status: z.enum(["open", "closed"], {
-    required_error: "Status is required",
+    message: "Status is required",
   }),
   order: z.number().int().min(0).optional(),
   overview: z.array(z.string().min(1, "Overview paragraph cannot be empty")).optional(),
