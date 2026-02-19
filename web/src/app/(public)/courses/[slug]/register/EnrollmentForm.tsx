@@ -8,10 +8,11 @@ import {
   aspectsToDevelopOptions,
   type RegistrationFormData,
 } from "@/lib/validations/registration";
-import { submitRegistration } from "@/lib/actions/registration";
+import { submitRegistration, updateRegistrationByStudent } from "@/lib/actions/registration";
 import type { PrimaryWorkSetting, PreferredFormat } from "@/types/registration";
+import type { CoursePricing } from "@/types/course";
 
-type Course = { slug: string; id: string; title: string };
+type Course = { slug: string; id: string; title: string; pricing?: CoursePricing };
 
 const CURRENT_ROLES = [
   "Associate Dentist",
@@ -53,16 +54,23 @@ const defaultFormState = (course: Course): Partial<RegistrationFormData> => ({
   contactByWhatsApp: false,
   consentContact: false,
   acceptedTerms: false,
+  singleOccupancyUpgrade: false,
 });
 
 export default function EnrollmentForm({
   course,
   initialData,
   userId,
+  registrationId,
+  onSuccessRedirect,
 }: {
   course: Course;
   initialData?: Partial<RegistrationFormData>;
   userId?: string;
+  /** When set, form submits as update (student editing own pending enrollment) instead of create. */
+  registrationId?: string;
+  /** Redirect path after successful update (e.g. /portal/dashboard). Ignored when registrationId is not set. */
+  onSuccessRedirect?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -111,11 +119,17 @@ export default function EnrollmentForm({
     }
 
     setSubmitting(true);
-    const result = await submitRegistration(parsed.data, userId);
+    const result = registrationId && userId
+      ? await updateRegistrationByStudent(registrationId, parsed.data, userId)
+      : await submitRegistration(parsed.data, userId);
     setSubmitting(false);
 
     if (result.success) {
-      router.push(`/courses/${course.slug}/register/success`);
+      if (onSuccessRedirect) {
+        router.push(onSuccessRedirect);
+      } else {
+        router.push(`/courses/${course.slug}/register/success`);
+      }
       return;
     }
     setError(result.error);
@@ -483,6 +497,24 @@ export default function EnrollmentForm({
               </label>
             </div>
           </div>
+          {course.pricing?.singleOccupancyUpgrade && (
+            <div className="rounded-lg border border-accentGold/30 bg-accentGold/5 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.singleOccupancyUpgrade ?? false}
+                  onChange={(e) => update("singleOccupancyUpgrade", e.target.checked)}
+                  className="mt-1 rounded border-white/20"
+                />
+                <span className="text-sm text-white/90">
+                  Add single occupancy upgrade — {course.pricing.singleOccupancyUpgrade} (optional)
+                </span>
+              </label>
+              <p className="mt-1.5 pl-6 text-xs text-white/60">
+                Choose this option for a private room. The amount will be added to your total.
+              </p>
+            </div>
+          )}
           <div>
             <label className="flex cursor-pointer items-start gap-3">
               <input
@@ -536,7 +568,7 @@ export default function EnrollmentForm({
           disabled={submitting}
           className="rounded-full border-2 border-accentGold bg-accentGold px-8 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90 disabled:opacity-60"
         >
-          {submitting ? "Submitting…" : "Submit enrollment"}
+          {submitting ? (registrationId ? "Saving…" : "Submitting…") : (registrationId ? "Save changes" : "Submit enrollment")}
         </button>
       </div>
     </form>

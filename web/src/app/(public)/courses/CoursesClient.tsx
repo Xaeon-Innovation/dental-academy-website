@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Check } from "lucide-react";
 import type { Course } from "@/types/course";
 import { EnrollButton } from "@/components/EnrollButton";
 import { SpotsLeft } from "@/components/SpotsLeft";
+import { useAuth } from "@/contexts/AuthContext";
+import { getRegistrationsByUserId } from "@/lib/actions/student";
 
 interface CoursesClientProps {
   courses: Course[];
@@ -12,6 +15,24 @@ interface CoursesClientProps {
 
 export default function CoursesClient({ courses }: CoursesClientProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setEnrolledCourseIds([]);
+      return;
+    }
+    let cancelled = false;
+    getRegistrationsByUserId(user.uid).then((regs) => {
+      if (cancelled) return;
+      const ids = regs.filter((r) => r.status !== "cancelled").map((r) => r.courseId);
+      setEnrolledCourseIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   const toggleCard = (slug: string) => {
     setExpandedCard(expandedCard === slug ? null : slug);
@@ -46,6 +67,7 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
           ) : (
             courses.map((course) => {
               const isExpanded = expandedCard === course.slug;
+              const isEnrolled = user && enrolledCourseIds.includes(course.id);
               return (
                 <article
                   key={course.slug}
@@ -56,11 +78,19 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                   }`}
                 >
                   <div className="p-6">
-                    {course.cpd && (
-                      <span className="inline-block rounded-full border border-accentGold/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-accentGold">
-                        {course.cpd}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {course.cpd && (
+                        <span className="inline-block rounded-full border border-accentGold/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-accentGold">
+                          {course.cpd}
+                        </span>
+                      )}
+                      {isEnrolled && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-emerald-400">
+                          <Check className="h-3 w-3" aria-hidden />
+                          Already enrolled
+                        </span>
+                      )}
+                    </div>
                     <h2 className="mt-4 text-lg font-semibold tracking-tight">
                       {course.title}
                     </h2>
@@ -113,6 +143,7 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                             </Link>
                             <EnrollButton
                               courseSlug={course.slug}
+                              isEnrolled={isEnrolled}
                               onClick={(e) => e.stopPropagation()}
                             >
                               Enroll Now

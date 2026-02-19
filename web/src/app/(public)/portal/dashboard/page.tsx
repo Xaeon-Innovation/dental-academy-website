@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile, updateStudentSavedForm } from "@/lib/actions/student";
+import { getCourses } from "@/lib/actions/course";
+import { computeRegistrationTotal } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration } from "@/types/registration";
+import type { Course } from "@/types/course";
 import StudentDashboardGuard from "./StudentDashboardGuard";
 import DashboardProfileForm from "./DashboardProfileForm";
 import DashboardSavedFormEditor from "./DashboardSavedFormEditor";
@@ -21,18 +24,24 @@ export default function PortalDashboardPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [registrations, setRegistrations] = useState<(Registration & { id: string })[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getStudentProfile(user.uid), getRegistrationsByUserId(user.uid)]).then(
-      ([p, regs]) => {
-        setProfile(p ?? null);
-        setRegistrations(regs);
-        setLoading(false);
-      }
-    );
+    Promise.all([
+      getStudentProfile(user.uid),
+      getRegistrationsByUserId(user.uid),
+      getCourses(),
+    ]).then(([p, regs, coursesData]) => {
+      setProfile(p ?? null);
+      setRegistrations(regs);
+      setCourses(coursesData);
+      setLoading(false);
+    });
   }, [user]);
+
+  const courseById = new Map(courses.map((c) => [c.id, c]));
 
   const handleProfileSave = async (data: { phone: string; displayName?: string }) => {
     if (!user) return { success: false as const, error: "Not signed in" };
@@ -87,6 +96,11 @@ export default function PortalDashboardPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
                   Enrolled courses
                 </h2>
+                {registrations.length > 0 && (
+                  <p className="mt-2 text-xs text-white/60">
+                    Please wait for confirmation from the admin. You will be contacted once your enrollment is confirmed.
+                  </p>
+                )}
                 {registrations.length === 0 ? (
                   <p className="mt-4 text-sm text-white/60">
                     You have not enrolled in any courses yet.{" "}
@@ -96,27 +110,49 @@ export default function PortalDashboardPage() {
                   </p>
                 ) : (
                   <ul className="mt-4 space-y-3">
-                    {registrations.map((reg) => (
-                      <li
-                        key={reg.id}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-black/20 px-4 py-3"
-                      >
-                        <div>
-                          <span className="font-medium text-white">
-                            {reg.courseSlug ? formatSlug(reg.courseSlug) : reg.courseId}
-                          </span>
-                          <span className="ml-2 text-xs text-white/50">({reg.status})</span>
-                        </div>
-                        {reg.courseSlug && (
-                          <Link
-                            href={`/courses/${reg.courseSlug}`}
-                            className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
-                          >
-                            View course
-                          </Link>
-                        )}
-                      </li>
-                    ))}
+                    {registrations.map((reg) => {
+                      const course = courseById.get(reg.courseId);
+                      const totalResult = computeRegistrationTotal(reg, course);
+                      return (
+                        <li
+                          key={reg.id}
+                          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-white/5 bg-black/20 px-4 py-3"
+                        >
+                          <div>
+                            <span className="font-medium text-white">
+                              {reg.courseSlug ? formatSlug(reg.courseSlug) : reg.courseId}
+                            </span>
+                            <span className="ml-2 text-xs text-white/50">({reg.status})</span>
+                            {totalResult && (
+                              <span className="ml-2 text-xs text-white/60">
+                                Total: {totalResult.formattedTotal}
+                              </span>
+                            )}
+                            {totalResult === null && course && (
+                              <span className="ml-2 text-xs text-white/50">On request</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3">
+                            {reg.status === "pending" && (
+                              <Link
+                                href={`/portal/dashboard/enrollments/${reg.id}/edit`}
+                                className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                              >
+                                Update enrollment
+                              </Link>
+                            )}
+                            {reg.courseSlug && (
+                              <Link
+                                href={`/courses/${reg.courseSlug}`}
+                                className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                              >
+                                View course
+                              </Link>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>

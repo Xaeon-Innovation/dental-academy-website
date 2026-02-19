@@ -27,6 +27,7 @@ export type AspectToDevelop = (typeof ASPECTS_TO_DEVELOP)[number];
 
 export interface Registration {
   id: string;
+  userId?: string;
   courseId: string;
   courseSlug?: string;
   email: string;
@@ -53,6 +54,8 @@ export interface Registration {
   // Final
   contactByWhatsApp: boolean;
   consentContact: boolean;
+  /** Student chose single occupancy upgrade (adds pricing.singleOccupancyUpgrade to total) */
+  singleOccupancyUpgrade?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

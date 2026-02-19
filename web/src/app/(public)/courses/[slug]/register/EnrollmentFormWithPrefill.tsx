@@ -6,7 +6,9 @@ import { getStudentProfile } from "@/lib/actions/student";
 import type { RegistrationFormData } from "@/lib/validations/registration";
 import EnrollmentForm from "./EnrollmentForm";
 
-type Course = { slug: string; id: string; title: string };
+import type { CoursePricing } from "@/types/course";
+
+type Course = { slug: string; id: string; title: string; pricing?: CoursePricing };
 
 interface EnrollmentFormWithPrefillProps {
   course: Course;

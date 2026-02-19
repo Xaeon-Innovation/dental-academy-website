@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateRegistrationStatus } from "@/lib/actions/registration";
+import { computeRegistrationTotal } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration, RegistrationStatus } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -174,6 +175,14 @@ export default function RegistrationDetailsDialog({
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Enrollment Date</label>
                 <p className="mt-1 text-white">{formatDate(registration.createdAt)}</p>
               </div>
+              {course && (
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Total</label>
+                  <p className="mt-1 text-white">
+                    {computeRegistrationTotal(registration, course)?.formattedTotal ?? "On request"}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Country</label>
                 <p className="mt-1 text-white">{registration.country || "—"}</p>

@@ -36,7 +36,7 @@ export default async function RegisterPage({ params }: Props) {
               access to course registration.
             </p>
           </header>
-          <EnrollmentFormWithPrefill course={{ slug: course.slug, id: course.id, title: course.title }} />
+          <EnrollmentFormWithPrefill course={{ slug: course.slug, id: course.id, title: course.title, pricing: course.pricing }} />
         </div>
       </div>
     </RegisterPageGuard>

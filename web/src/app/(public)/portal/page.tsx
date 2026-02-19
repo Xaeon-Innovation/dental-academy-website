@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useEffect, useRef } from "react";
+import { useState, FormEvent, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -39,7 +39,7 @@ function authErrorMessage(code: string, fallback: string): string {
   return messages[code] || fallback;
 }
 
-export default function PortalPage() {
+function PortalPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading, isAdmin } = useAuth();
@@ -298,5 +298,21 @@ export default function PortalPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function PortalFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 text-white">
+      <p className="text-white/70">Loading…</p>
+    </div>
+  );
+}
+
+export default function PortalPage() {
+  return (
+    <Suspense fallback={<PortalFallback />}>
+      <PortalPageContent />
+    </Suspense>
   );
 }
