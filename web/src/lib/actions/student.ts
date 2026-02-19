@@ -148,8 +148,8 @@ export async function getAllStudents(): Promise<(StudentProfile & { id: string }
           phone: docData.phone || "",
           displayName: docData.displayName,
           savedFormSnapshot: docData.savedFormSnapshot,
-          createdAt: data.createdAt as Date | undefined,
-          updatedAt: data.updatedAt as Date | undefined,
+          createdAt: data?.createdAt as Date | undefined,
+          updatedAt: data?.updatedAt as Date | undefined,
         } as StudentProfile & { id: string };
       });
     } else {
