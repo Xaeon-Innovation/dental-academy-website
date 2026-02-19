@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
-import { INSTRUCTORS } from "@/lib/constants/instructors";
+import { getInstructors } from "@/lib/actions/instructor";
 
 const MISSION_VISION = [
   {
@@ -64,7 +64,9 @@ const STATS = [
   { value: "98%", label: "Career placement" },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const instructors = await getInstructors();
+
   return (
     <div className="bg-background text-white">
       {/* Hero */}
@@ -271,28 +273,40 @@ export default function AboutPage() {
             Meet our instructors
           </h2>
           <div className="mt-10 flex flex-wrap justify-center gap-8 md:gap-12">
-            {INSTRUCTORS.map((instructor) => (
-              <div
-                key={instructor.name}
-                className="flex flex-col items-center transition hover:opacity-90"
-              >
-                <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-white/10 bg-white/5 md:h-32 md:w-32">
-                  <Image
-                    src={instructor.imageUrl}
-                    alt={instructor.name}
-                    fill
-                    className="object-cover"
-                    sizes="128px"
-                  />
-                </div>
-                <p className="mt-3 text-center text-sm font-medium text-white">
-                  {instructor.name}
-                </p>
-                <p className="mt-0.5 text-center text-xs text-white/60">
-                  {instructor.credentials}
-                </p>
-              </div>
-            ))}
+            {instructors.length === 0 ? (
+              <p className="w-full text-center text-sm text-white/50">
+                No instructors available yet.
+              </p>
+            ) : (
+              instructors.map((instructor) => {
+                const imageUrl = instructor.imageUrl || "/images/instructors/placeholder.png";
+
+                return (
+                  <div
+                    key={instructor.id}
+                    className="flex flex-col items-center transition hover:opacity-90"
+                  >
+                    <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border-2 border-white/10 bg-white/5 md:h-32 md:w-32">
+                      <Image
+                        src={imageUrl}
+                        alt={instructor.name}
+                        fill
+                        className="object-cover"
+                        sizes="128px"
+                      />
+                    </div>
+                    <div className="mt-3 flex min-h-[4.5rem] w-full max-w-[10rem] flex-col items-center justify-start text-center">
+                      <p className="text-sm font-medium text-white">
+                        {instructor.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-white/60">
+                        {instructor.credentials}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
           <div className="mt-8 text-center">
             <Link

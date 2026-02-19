@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Course } from "@/types/course";
+import { EnrollButton } from "@/components/EnrollButton";
+import { SpotsLeft } from "@/components/SpotsLeft";
 
 interface CoursesClientProps {
   courses: Course[];
@@ -70,6 +72,11 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                         Course Provider: {course.provider}
                       </p>
                     )}
+                    {course.maxParticipants && (
+                      <div className="mt-2">
+                        <SpotsLeft courseId={course.id} maxParticipants={course.maxParticipants} />
+                      </div>
+                    )}
 
                     {/* Expanded Content */}
                     <div
@@ -104,13 +111,12 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                             >
                               Learn More
                             </Link>
-                            <Link
-                              href={`/courses/${course.slug}/register`}
-                              className="inline-block rounded-full border-2 border-accentGold px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:border-accentGold/80 hover:bg-accentGold/10"
+                            <EnrollButton
+                              courseSlug={course.slug}
                               onClick={(e) => e.stopPropagation()}
                             >
                               Enroll Now
-                            </Link>
+                            </EnrollButton>
                           </div>
                         </div>
                       </div>

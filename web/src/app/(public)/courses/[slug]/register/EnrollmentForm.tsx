@@ -44,21 +44,40 @@ const HOW_DID_YOU_HEAR = [
   "Other",
 ];
 
-export default function EnrollmentForm({ course }: { course: Course }) {
+const defaultFormState = (course: Course): Partial<RegistrationFormData> => ({
+  courseId: course.id,
+  courseSlug: course.slug,
+  hasPlacedImplants: false,
+  hasRestoredCases: false,
+  aspectsToDevelop: [],
+  contactByWhatsApp: false,
+  consentContact: false,
+  acceptedTerms: false,
+});
+
+export default function EnrollmentForm({
+  course,
+  initialData,
+  userId,
+}: {
+  course: Course;
+  initialData?: Partial<RegistrationFormData>;
+  userId?: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const [form, setForm] = useState<Partial<RegistrationFormData>>({
-    courseId: course.id,
-    courseSlug: course.slug,
-    hasPlacedImplants: false,
-    hasRestoredCases: false,
-    aspectsToDevelop: [],
-    contactByWhatsApp: false,
-    consentContact: false,
-    acceptedTerms: false,
+  const [form, setForm] = useState<Partial<RegistrationFormData>>(() => {
+    const base = defaultFormState(course);
+    if (!initialData) return base;
+    return {
+      ...base,
+      ...initialData,
+      courseId: course.id,
+      courseSlug: course.slug,
+    };
   });
 
   function update(field: keyof RegistrationFormData, value: unknown) {
@@ -92,7 +111,7 @@ export default function EnrollmentForm({ course }: { course: Course }) {
     }
 
     setSubmitting(true);
-    const result = await submitRegistration(parsed.data);
+    const result = await submitRegistration(parsed.data, userId);
     setSubmitting(false);
 
     if (result.success) {

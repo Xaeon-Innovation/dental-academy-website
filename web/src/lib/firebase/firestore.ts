@@ -10,4 +10,5 @@ export const COLLECTIONS = {
   categories: "categories",
   settings: "settings",
   instructors: "instructors",
+  students: "students",
 } as const;
