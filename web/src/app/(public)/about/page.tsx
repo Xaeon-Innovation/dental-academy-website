@@ -73,7 +73,7 @@ export default async function AboutPage() {
     <div className="bg-background text-white">
       {/* Hero */}
       <section
-        className="relative overflow-hidden px-4 py-12 md:py-16 lg:py-20"
+        className="relative min-h-[70vh] overflow-hidden px-4 py-20 md:py-28 lg:py-36"
         aria-labelledby="about-hero-heading"
       >
         <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
