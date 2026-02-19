@@ -40,6 +40,7 @@ export const registrationSchema = z
     contactByWhatsApp: z.boolean(),
     consentContact: z.boolean(),
     acceptedTerms: z.boolean(),
+    singleOccupancyUpgrade: z.boolean().optional(),
   })
   .refine((data) => data.consentContact === true, {
     message: "You must agree to be contacted with further details.",

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, Trash2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { getAllStudents } from "@/lib/actions/student";
-import { getAllRegistrations, updateRegistrationStatus } from "@/lib/actions/registration";
+import { getAllRegistrations, updateRegistrationStatus, deleteRegistration } from "@/lib/actions/registration";
 import { getCourses } from "@/lib/actions/course";
+import { computeRegistrationTotal } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration, RegistrationStatus } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -21,6 +23,7 @@ export default function AdminRegistrationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [detailsDialog, setDetailsDialog] = useState<{
     open: boolean;
     type: "student" | "enrollment";
@@ -110,6 +113,61 @@ export default function AdminRegistrationsPage() {
     );
   }, [registrations, courses, searchQuery]);
 
+  async function handleDelete(registrationId: string) {
+    if (!confirm("Are you sure you want to delete this enrollment? This cannot be undone.")) return;
+    setDeletingId(registrationId);
+    setUpdateError(null);
+    try {
+      const result = await deleteRegistration(registrationId);
+      if (result.success) {
+        await loadData();
+      } else {
+        setUpdateError(result.error);
+      }
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : "Failed to delete");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function handleExportExcel() {
+    const courseTitle = (id: string) => courses.get(id)?.title ?? id;
+    const rows = registrations.map((reg) => {
+      const course = courses.get(reg.courseId);
+      const totalResult = computeRegistrationTotal(reg, course ?? undefined);
+      return {
+        "Enrollment ID": reg.id,
+        "Student Name": reg.name,
+        "Email": reg.email,
+        "Phone": reg.phone ?? "",
+        "Course": courseTitle(reg.courseId),
+        "Status": reg.status,
+        "Enrollment Date": reg.createdAt ? new Date(reg.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+        "Total": totalResult ? totalResult.formattedTotal : "On request",
+        "Country": reg.country ?? "",
+        "Instagram": reg.instagramHandle ?? "",
+        "Current Role": reg.currentRole ?? "",
+        "Years Experience": reg.yearsExperience ?? "",
+        "Primary Work Setting": reg.primaryWorkSetting ?? "",
+        "GDC Number": reg.gdcNumber ?? "",
+        "Has Placed Implants": reg.hasPlacedImplants ? "Yes" : "No",
+        "Implants Placed Count": reg.implantsPlacedCount ?? "",
+        "Has Restored Cases": reg.hasRestoredCases ? "Yes" : "No",
+        "Aspects to Develop": Array.isArray(reg.aspectsToDevelop) ? reg.aspectsToDevelop.join("; ") : "",
+        "Preferred Format": reg.preferredFormat ?? "",
+        "How Did You Hear": reg.howDidYouHear ?? "",
+        "What Attracted You": reg.whatAttractedYou ?? "",
+        "Contact by WhatsApp": reg.contactByWhatsApp ? "Yes" : "No",
+        "Single Occupancy Upgrade": reg.singleOccupancyUpgrade ? "Yes" : "No",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Enrollments");
+    XLSX.writeFile(wb, `enrollments-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   async function handleStatusChange(registrationId: string, newStatus: RegistrationStatus) {
     setUpdatingStatus(registrationId);
     setUpdateError(null);
@@ -178,6 +236,20 @@ export default function AdminRegistrationsPage() {
           Course Enrollments
         </button>
       </div>
+
+      {/* Export Excel - only when on enrollments tab */}
+      {activeTab === "enrollments" && registrations.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="inline-flex items-center gap-2 rounded-lg border border-accentGold/50 bg-accentGold/10 px-4 py-2 text-sm font-medium text-accentGold transition hover:bg-accentGold/20"
+          >
+            <Download className="h-4 w-4" />
+            Export as Excel
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -311,6 +383,9 @@ export default function AdminRegistrationsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
                     Enrollment Date
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
+                    Total
+                  </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/70">
                     Actions
                   </th>
@@ -319,6 +394,7 @@ export default function AdminRegistrationsPage() {
               <tbody className="divide-y divide-white/10">
                 {filteredRegistrations.map((registration) => {
                   const course = courses.get(registration.courseId);
+                  const totalResult = computeRegistrationTotal(registration, course ?? undefined);
                   return (
                     <tr key={registration.id} className="transition hover:bg-white/5">
                       <td className="px-4 py-4">
@@ -351,6 +427,9 @@ export default function AdminRegistrationsPage() {
                       <td className="px-4 py-4 text-sm text-white/70">
                         {formatDate(registration.createdAt)}
                       </td>
+                      <td className="px-4 py-4 text-sm text-white/70">
+                        {totalResult ? totalResult.formattedTotal : "On request"}
+                      </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -366,6 +445,14 @@ export default function AdminRegistrationsPage() {
                             title="View details"
                           >
                             <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(registration.id)}
+                            disabled={deletingId === registration.id}
+                            className="rounded p-1.5 text-red-400/80 transition hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
+                            title="Delete enrollment"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>

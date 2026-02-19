@@ -389,7 +389,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     </p>
                   </>
                 )}
-                <RegisterNowButton courseSlug={slug} />
+                <RegisterNowButton courseSlug={slug} courseId={course.id} />
                 <p className="mt-4 text-center text-xs text-white/50">
                   By registering, you agree to our{" "}
                   <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">
