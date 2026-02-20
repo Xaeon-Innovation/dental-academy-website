@@ -20,7 +20,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   icons: {
-    icon: "/logoicoB.ico",
+    icon: "/logoicoB.png",
+    apple: "/logoicoB.png",
   },
   title: "Kaleidoscope Dental Academy",
   description: "Kaleidoscope Dental Academy – iPlace & iRestore training",
