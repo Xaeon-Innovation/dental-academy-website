@@ -31,34 +31,54 @@ export function getAdminApp(): App {
   // Try to load service account
   try {
     let serviceAccount;
-    
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      // Path to service account JSON file
-      const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-      // Handle both absolute and relative paths
-      const fullPath = keyPath.startsWith("/") || keyPath.match(/^[A-Z]:/i) 
-        ? keyPath 
-        : join(process.cwd(), keyPath);
-      
+
+    const keyEnv = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const base64Env = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
+
+    // FIREBASE_SERVICE_ACCOUNT_KEY can be either a file path or a base64 string (e.g. on Vercel)
+    const looksLikeFilePath =
+      keyEnv &&
+      (keyEnv.includes("/") || keyEnv.includes("\\") || keyEnv.endsWith(".json"));
+
+    if (base64Env) {
+      // Explicit base64 env (recommended for Vercel)
+      try {
+        const decoded = Buffer.from(base64Env, "base64").toString("utf8");
+        serviceAccount = JSON.parse(decoded);
+      } catch (parseError: unknown) {
+        const msg = parseError instanceof Error ? parseError.message : String(parseError);
+        throw new Error(
+          `Failed to parse base64 encoded service account key: ${msg}\n` +
+            "Make sure FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 is valid base64 encoded JSON."
+        );
+      }
+    } else if (keyEnv && looksLikeFilePath) {
+      // Path to service account JSON file (local dev)
+      const fullPath =
+        keyEnv.startsWith("/") || keyEnv.match(/^[A-Z]:/i)
+          ? keyEnv
+          : join(process.cwd(), keyEnv);
+
       try {
         const fileContents = readFileSync(fullPath, "utf8");
         serviceAccount = JSON.parse(fileContents);
-      } catch (fileError: any) {
+      } catch (fileError: unknown) {
+        const msg = fileError instanceof Error ? fileError.message : String(fileError);
         throw new Error(
-          `Failed to read service account key file at "${keyPath}": ${fileError.message}\n` +
-          `Make sure the file exists and the path in .env.local is correct.\n` +
-          `Current working directory: ${process.cwd()}`
+          `Failed to read service account key file at "${keyEnv}": ${msg}\n` +
+            `Make sure the file exists. Current working directory: ${process.cwd()}`
         );
       }
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64) {
-      // Base64 encoded service account JSON
+    } else if (keyEnv) {
+      // Value doesn't look like a path → treat as base64 (e.g. FIREBASE_SERVICE_ACCOUNT_KEY on Vercel)
       try {
-        const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64, "base64").toString();
+        const decoded = Buffer.from(keyEnv, "base64").toString("utf8");
         serviceAccount = JSON.parse(decoded);
-      } catch (parseError: any) {
+      } catch (parseError: unknown) {
+        const msg = parseError instanceof Error ? parseError.message : String(parseError);
         throw new Error(
-          `Failed to parse base64 encoded service account key: ${parseError.message}\n` +
-          `Make sure FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 in .env.local is valid base64 encoded JSON.`
+          `Failed to parse service account key: ${msg}\n` +
+            "For a base64 value use FIREBASE_SERVICE_ACCOUNT_KEY_BASE64, or use a file path for FIREBASE_SERVICE_ACCOUNT_KEY."
         );
       }
     } else {
