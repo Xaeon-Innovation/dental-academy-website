@@ -12,7 +12,20 @@ import {
 import { Globe } from "@/components/globe";
 import { AboutHeroMarquee } from "@/components/AboutHeroMarquee";
 import { TextReveal } from "@/components/TextReveal";
+import type { Metadata } from "next";
 import { getInstructors } from "@/lib/actions/instructor";
+
+export const metadata: Metadata = {
+  title: "About | Kaleidoscope Dental Academy",
+  description:
+    "Precision-driven implant education. Expert faculty, hands-on training, and ongoing support for dental professionals.",
+  keywords: [
+    "dental implant education",
+    "implant training UK",
+    "Kaleidoscope Dental Academy about",
+    "CPD dental courses",
+  ],
+};
 
 const MISSION_VISION = [
   {

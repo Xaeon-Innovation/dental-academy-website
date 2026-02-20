@@ -12,6 +12,7 @@ const footerLinks = [
 ];
 
 const legalLinks = [
+  { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms & Conditions" },
   { href: "/admin/login", label: "Staff login", ariaLabel: "Admin login" },
 ];
