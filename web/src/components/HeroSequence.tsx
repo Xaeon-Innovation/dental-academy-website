@@ -52,6 +52,10 @@ export default function HeroSequence() {
       renderHeight = (canvasWidth * imgHeight) / imgWidth;
     }
 
+    // Draw sequence slightly smaller so it doesn’t dominate the viewport
+    const sequenceScale = 0.88;
+    renderWidth *= sequenceScale;
+    renderHeight *= sequenceScale;
     const x = (canvasWidth - renderWidth) / 2;
     const y = (canvasHeight - renderHeight) / 2;
 
@@ -171,7 +175,7 @@ export default function HeroSequence() {
       className="relative z-0 bg-background"
       aria-label="Implant sequence animation"
     >
-      <div ref={wrapRef} id="pin-hero-wrap" className="h-[450vh]">
+      <div ref={wrapRef} id="pin-hero-wrap" className="h-[280vh] sm:h-[320vh] md:h-[400vh] lg:h-[450vh]">
         <div
           id="pin-hero"
           ref={stickyRef}
@@ -183,24 +187,24 @@ export default function HeroSequence() {
           />
           <div className="pointer-events-none absolute inset-0 z-10">
             <div
-              className="hero-text-start absolute left-6 top-16 max-w-md text-left md:left-12 md:top-20 lg:left-16 lg:top-24"
+              className="hero-text-start absolute left-4 top-24 max-w-md text-left md:left-12 md:top-20 lg:left-16 lg:top-24"
               style={{ opacity: 0, visibility: "hidden" }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accentGold">
                 iPlace
               </p>
-              <h1 className="font-[var(--font-playfair)] mt-2 text-3xl tracking-tight text-accentGold md:text-4xl lg:text-5xl">
+              <h1 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-accentGold md:text-4xl lg:text-5xl">
                 The Foundation
               </h1>
             </div>
             <div
-              className="hero-text-end absolute bottom-12 right-6 max-w-md text-right md:bottom-16 md:right-12 lg:right-16"
+              className="hero-text-end absolute bottom-10 right-4 max-w-md text-right md:bottom-16 md:right-12 lg:right-16"
               style={{ opacity: 0, visibility: "hidden" }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
                 iRestore
               </p>
-              <h2 className="font-[var(--font-playfair)] mt-2 text-3xl tracking-tight text-white md:text-4xl lg:text-5xl">
+              <h2 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-white md:text-4xl lg:text-5xl">
                 The Perfection
               </h2>
             </div>

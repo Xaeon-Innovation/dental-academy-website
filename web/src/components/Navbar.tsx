@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile } from "@/lib/actions/student";
+import { Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -20,7 +21,12 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, isAdmin } = useAuth();
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const enrollHref = user ? "/courses" : "/portal?redirect=" + encodeURIComponent("/courses");
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -81,6 +87,15 @@ export default function Navbar() {
           })}
         </nav>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition hover:bg-white/10 hover:text-white md:hidden"
+            {...(mobileMenuOpen ? { "aria-expanded": "true" } : { "aria-expanded": "false" })}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
           {user ? (
             isAdmin ? (
               <Link
@@ -109,6 +124,30 @@ export default function Navbar() {
           )}
         </div>
       </div>
+      {mobileMenuOpen && (
+        <div className="border-t border-white/5 bg-black/95 backdrop-blur md:hidden">
+          <nav className="flex flex-col px-4 py-3" aria-label="Mobile navigation">
+            {navLinks.map((link) => {
+              const isHome = link.href === "/";
+              const isActive = isHome
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-md px-3 py-2.5 text-sm font-medium transition ${
+                    isActive ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
