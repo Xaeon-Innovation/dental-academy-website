@@ -23,10 +23,11 @@ async function saveImageToPublicFolder(
     const buffer = Buffer.from(bytes);
 
     const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-
-    const originalExt = file.name.split(".").pop() || "jpg";
-    const fullFileName = `${timestamp}_${sanitizedName}.${originalExt}`;
+    const lastDot = file.name.lastIndexOf(".");
+    const baseName = lastDot >= 0 ? file.name.slice(0, lastDot) : file.name;
+    const originalExt = (lastDot >= 0 ? file.name.slice(lastDot + 1) : "jpg").toLowerCase();
+    const sanitizedBase = baseName.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const fullFileName = `${timestamp}_${sanitizedBase}.${originalExt}`;
 
     const publicDir = join(process.cwd(), "public", "images", subdirectory);
 
