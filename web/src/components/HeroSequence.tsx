@@ -106,7 +106,7 @@ export default function HeroSequence() {
       // IMPORTANT: Do not add onUpdate here that sets autoAlpha: 0 on the sticky. Canvas must stay visible so Philosophy can slide over it.
       const tl = gsap.timeline({
         scrollTrigger: {
-          scrub: 1,
+          scrub: 0.5,
           pin: true,
           trigger: "#pin-hero",
           start: "50% 50%",
@@ -175,7 +175,7 @@ export default function HeroSequence() {
       className="relative z-0 bg-background"
       aria-label="Implant sequence animation"
     >
-      <div ref={wrapRef} id="pin-hero-wrap" className="h-[280vh] sm:h-[320vh] md:h-[400vh] lg:h-[450vh]">
+      <div ref={wrapRef} id="pin-hero-wrap" className="h-[120vh] sm:h-[160vh] md:h-[200vh] lg:h-[240vh]">
         <div
           id="pin-hero"
           ref={stickyRef}

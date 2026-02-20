@@ -71,7 +71,7 @@ export default function Testimonials() {
       id="testimonials"
       className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
           Testimonials
         </p>

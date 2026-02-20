@@ -5,7 +5,7 @@ import ScrollIndicator from "@/components/ScrollIndicator";
 import Testimonials from "@/components/Testimonials";
 import { HomeCtaButtons } from "@/components/HomeCtaButtons";
 import { TextReveal } from "@/components/TextReveal";
-import { getInstructors } from "@/lib/actions/instructor";
+import { getInstructorsForPage } from "@/lib/actions/instructor";
 import { getHomeSettings } from "@/lib/actions/settings";
 import type { HomeSettings } from "@/types/settings";
 
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [instructors, homeSettings] = await Promise.all([
-    getInstructors(),
+    getInstructorsForPage("home"),
     getHomeSettings(),
   ]);
 
@@ -43,7 +43,7 @@ export default async function HomePage() {
       {/* 2. Our Philosophy — starts after hero so the full sequence (frames + IPLACE + iRestore) is visible first */}
       <section
         id="philosophy"
-        className="relative z-30 bg-background px-4 py-24 text-white md:py-32"
+        className="relative z-30 mt-32 bg-background px-4 py-24 text-white md:mt-80 md:py-32"
       >
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
           <div>
@@ -74,7 +74,7 @@ export default async function HomePage() {
         id="course-tracks"
         className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl text-center">
           <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
             Course Tracks
           </TextReveal>
@@ -98,7 +98,7 @@ export default async function HomePage() {
             ].map((track) => (
               <article key={track.title} className="course-track-box">
                 <span className="course-track-glow" aria-hidden />
-                <div className="course-track-content">
+                <div className="course-track-content text-center">
                   <div>
                     <h3 className="text-lg font-semibold tracking-tight">
                       {track.title}
@@ -110,7 +110,7 @@ export default async function HomePage() {
                   </div>
                   <Link
                     href={`/courses/${track.slug}`}
-                    className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accentGold/80 hover:text-accentGold"
+                    className="mt-6 inline-block text-xs font-semibold uppercase tracking-[0.18em] text-accentGold/80 hover:text-accentGold"
                   >
                     Explore track
                   </Link>
@@ -126,19 +126,19 @@ export default async function HomePage() {
         id="instructors"
         className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl text-center">
           <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
             Meet our instructors
           </TextReveal>
           <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
             <TextReveal>Expert faculty. Real-world focus.</TextReveal>
           </h2>
-          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-base">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70 md:text-base">
             Learn from clinicians and educators who combine years of practice with a commitment to structured, hands-on training.
           </p>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 flex flex-wrap justify-center gap-6">
             {instructors.length === 0 ? (
-              <p className="col-span-full text-center text-sm text-white/50">
+              <p className="w-full text-center text-sm text-white/50">
                 No instructors available yet.
               </p>
             ) : (
@@ -154,7 +154,7 @@ export default async function HomePage() {
                 return (
                   <article
                     key={instructor.id}
-                    className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04]"
+                    className="group relative w-full max-w-[280px] overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04] sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
                   >
                     <div className="aspect-[3/4] overflow-hidden rounded-t-2xl bg-white/5">
                       <Image

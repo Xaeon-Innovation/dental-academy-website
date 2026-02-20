@@ -13,7 +13,7 @@ import { Globe } from "@/components/globe";
 import { AboutHeroMarquee } from "@/components/AboutHeroMarquee";
 import { TextReveal } from "@/components/TextReveal";
 import type { Metadata } from "next";
-import { getInstructors } from "@/lib/actions/instructor";
+import { getInstructorsForPage } from "@/lib/actions/instructor";
 
 export const metadata: Metadata = {
   title: "About | Kaleidoscope Dental Academy",
@@ -80,7 +80,7 @@ const STATS = [
 ];
 
 export default async function AboutPage() {
-  const instructors = await getInstructors();
+  const instructors = await getInstructorsForPage("about");
 
   return (
     <div className="bg-background text-white">

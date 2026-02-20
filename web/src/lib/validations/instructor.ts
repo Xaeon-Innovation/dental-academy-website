@@ -47,12 +47,17 @@ const preprocessImageUrl = z.preprocess(
     .optional()
 );
 
+const visibleOnSchema = z.array(
+  z.enum(["home", "about", "courses"])
+).optional();
+
 export const instructorSchema = z.object({
   name: z.string().min(1, "Name is required"),
   credentials: z.string().min(1, "Credentials are required"),
   bio: z.string().min(1, "Bio is required"),
   badges: z.array(z.string()).default([]),
   imageUrl: preprocessImageUrl,
+  visibleOn: visibleOnSchema,
 });
 
 export type InstructorFormData = z.infer<typeof instructorSchema>;
