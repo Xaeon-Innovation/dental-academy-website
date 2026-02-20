@@ -84,11 +84,13 @@ export default async function HomePage() {
                 title: "iPlace // iRestore",
                 body: "Single and Multiple implants intensive course. 60 Hrs of CPD.",
                 provider: "Course Provider: Kaleidoscope Dental Academy",
+                slug: "iplace-irestore",
               },
               {
                 title: "FULL ARCH INTENSIVE",
                 body: "(All-on-X). 46hrs of CPD.",
                 provider: "Course Provider: Kaleidoscope Dental Academy",
+                slug: "full-arch-intensive",
               },
             ].map((track) => (
               <article key={track.title} className="course-track-box">
@@ -103,9 +105,12 @@ export default async function HomePage() {
                       {track.provider}
                     </p>
                   </div>
-                  <span className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accentGold/80">
+                  <Link
+                    href={`/courses/${track.slug}`}
+                    className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accentGold/80 hover:text-accentGold"
+                  >
                     Explore track
-                  </span>
+                  </Link>
                 </div>
               </article>
             ))}

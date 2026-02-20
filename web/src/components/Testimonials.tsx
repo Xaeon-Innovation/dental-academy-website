@@ -55,7 +55,7 @@ function TestimonialCard({
   quote,
 }: (typeof testimonials)[number]) {
   return (
-    <article className="flex w-[320px] shrink-0 flex-col justify-between rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.03] to-background/90 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.85)] transition hover:border-accentGold/50">
+    <article className="flex w-[320px] shrink-0 flex-col justify-between rounded-2xl border border-white/5 bg-[#1c1c1e] p-5 transition hover:border-accentGold/50">
       <StarRating rating={rating} />
       <p className="mt-3 text-sm leading-relaxed text-white/80">{quote}</p>
       <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-accentGold">

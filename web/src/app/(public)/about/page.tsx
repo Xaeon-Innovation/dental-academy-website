@@ -9,7 +9,9 @@ import {
   BookOpen,
   ArrowRight,
 } from "lucide-react";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { Globe } from "@/components/globe";
+import { AboutHeroMarquee } from "@/components/AboutHeroMarquee";
+import { TextReveal } from "@/components/TextReveal";
 import { getInstructors } from "@/lib/actions/instructor";
 
 const MISSION_VISION = [
@@ -71,7 +73,7 @@ export default async function AboutPage() {
     <div className="bg-background text-white">
       {/* Hero */}
       <section
-        className="relative overflow-hidden px-4 py-12 md:py-16 lg:py-20"
+        className="relative min-h-[70vh] overflow-hidden px-4 py-20 md:py-28 lg:py-36"
         aria-labelledby="about-hero-heading"
       >
         <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
@@ -91,10 +93,18 @@ export default async function AboutPage() {
               id="about-hero-heading"
               className="font-[var(--font-playfair)] text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl"
             >
-              <span className="block">Elevating</span>
-              <span className="text-accentGold">Dentistry</span>
-              <span className="block">Through</span>
-              <span className="text-accentGold">Excellence</span>
+              <span className="block">
+                <TextReveal>Elevating</TextReveal>
+              </span>
+              <span className="block font-normal italic text-accentGold">
+                <TextReveal>Dentistry</TextReveal>
+              </span>
+              <span className="block">
+                <TextReveal>Through</TextReveal>
+              </span>
+              <span className="text-accentGold">
+                <TextReveal>Excellence</TextReveal>
+              </span>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/70 md:text-base">
               Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
@@ -102,40 +112,25 @@ export default async function AboutPage() {
             <div className="mt-8">
               <Link
                 href="/courses"
-                className="inline-flex items-center gap-2 rounded-full border-2 border-accentGold bg-accentGold px-6 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
+                className="btn-liquid inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold uppercase tracking-[0.16em]"
               >
                 Start your journey
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 shadow-2xl lg:aspect-[5/4]">
-            <Image
-              src="/images/philosophy/teeth.jpeg"
-              alt="Kaleidoscope Dental Academy – precision-driven implant education"
-              fill
-              className="object-cover object-center"
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
+          <AboutHeroMarquee />
         </div>
       </section>
 
-      {/* Legacy / About */}
+      {/* Legacy / About – interactive globe showing company branches */}
       <section
         className="border-t border-white/5 px-4 py-16 md:py-24"
         aria-labelledby="legacy-heading"
       >
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2 md:items-center">
-          <div className="relative order-2 md:order-1 aspect-[4/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5">
-            <Image
-              src="/images/philosophy/philosophy-image.png"
-              alt="Kaleidoscope faculty and clinical training"
-              fill
-              className="object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+          <div className="relative order-2 md:order-1 aspect-[1/1] min-h-[280px] overflow-hidden rounded-2xl border border-white/5 bg-white/5 md:min-h-[320px]">
+            <Globe className="!max-w-full" />
           </div>
           <div className="order-1 md:order-2">
             <div className="h-px w-12 bg-accentGold" aria-hidden />
@@ -143,7 +138,7 @@ export default async function AboutPage() {
               id="legacy-heading"
               className="mt-4 font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
             >
-              A legacy of clinical mastery
+              <TextReveal>A legacy of clinical mastery</TextReveal>
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-white/70 md:text-base">
               Our programmes combine rigorous theory with supervised hands-on training and, where applicable, live patient observation. We focus on implant placement and restoration protocols that you can apply immediately in your practice.
@@ -153,7 +148,7 @@ export default async function AboutPage() {
             </p>
             <Link
               href="/courses"
-              className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70 transition hover:text-accentGold"
+              className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-accentGold transition hover:text-accentGold/90"
             >
               Explore our courses
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -168,20 +163,20 @@ export default async function AboutPage() {
         aria-labelledby="mission-vision-heading"
       >
         <div className="mx-auto max-w-6xl">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+          <TextReveal className="block text-center text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
             Our core purpose
-          </p>
+          </TextReveal>
           <h2
             id="mission-vision-heading"
             className="mt-2 text-center font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
           >
-            Mission & Vision
+            <TextReveal>Mission & Vision</TextReveal>
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             {MISSION_VISION.map(({ icon: Icon, title, text }) => (
               <article
                 key={title}
-                className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition duration-300 hover:border-white/10 hover:bg-white/[0.04]"
+                className="holographic-card rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-accentGold/20"
               >
                 <span
                   className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-accentGold/10 text-accentGold"
@@ -211,7 +206,7 @@ export default async function AboutPage() {
             id="features-heading"
             className="font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
           >
-            Why the Academy
+            <TextReveal>Why the Academy</TextReveal>
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/70 md:text-base">
             Structured education designed for clinicians who want to grow their implant practice with confidence.
@@ -220,7 +215,7 @@ export default async function AboutPage() {
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <article
                 key={title}
-                className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 transition duration-300 hover:border-accentGold/20 hover:bg-white/[0.04] hover:shadow-lg hover:scale-[1.02]"
+                className="holographic-card rounded-2xl border border-white/5 bg-white/[0.02] p-5 hover:border-accentGold/20"
               >
                 <span
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-accentGold/10 text-accentGold"
@@ -270,7 +265,7 @@ export default async function AboutPage() {
             id="faculty-heading"
             className="text-center font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
           >
-            Meet our instructors
+            <TextReveal>Meet our instructors</TextReveal>
           </h2>
           <div className="mt-10 flex flex-wrap justify-center gap-8 md:gap-12">
             {instructors.length === 0 ? (
@@ -330,95 +325,23 @@ export default async function AboutPage() {
             id="cta-heading"
             className="mt-4 font-[var(--font-playfair)] text-3xl font-semibold tracking-tight md:text-4xl"
           >
-            Ready to master your craft?
+            <TextReveal>Ready to master your craft?</TextReveal>
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-white/70 md:text-base">
             Join clinicians who have elevated their implant practice through structured education, hands-on training, and ongoing support from the Academy.
           </p>
-          <div className="mt-8">
-            <InteractiveHoverButton href="/courses" variant="primary">
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/courses"
+              className="btn-liquid inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] focus:outline-none focus:ring-2 focus:ring-accentGold/50 focus:ring-offset-2 focus:ring-offset-[#1c1c1e]"
+            >
               View courses
-            </InteractiveHoverButton>
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
           <p className="mt-6 text-xs text-white/50">
             Join a community of excellence, and achieve mastery.
           </p>
-        </div>
-      </section>
-
-      {/* About page footer block – 3 columns, same styling patterns as site footer */}
-      <section
-        className="border-t border-white/5 bg-black/80 px-4 py-12 md:py-16"
-        aria-label="About Kaleidoscope Dental Academy"
-      >
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-3">
-          <div>
-            <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-              Kaleidoscope Dental Academy
-            </Link>
-            <p className="mt-3 text-sm leading-relaxed text-white/60">
-              Precision-driven implant education for clinicians who demand clarity, control, and repeatable outcomes.
-            </p>
-            <p className="mt-4 text-xs text-white/40">
-              &copy; {new Date().getFullYear()} Kaleidoscope Dental Academy.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
-              Academy
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm text-white/60">
-              <li>
-                <Link href="/courses" className="transition hover:text-white">
-                  Courses
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="transition hover:text-white">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="transition hover:text-white">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="transition hover:text-white">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
-              Contact
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm text-white/60">
-              <li>
-                <Link href="/contact" className="transition hover:text-white">
-                  Get in touch
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="mailto:kaleidoscopedentalacademy@gmail.com"
-                  className="transition hover:text-white"
-                >
-                  kaleidoscopedentalacademy@gmail.com
-                </a>
-              </li>
-              <li>
-                <a
-                  href="tel:+447549685145"
-                  className="transition hover:text-white"
-                  aria-label="Phone: 07549 685145"
-                >
-                  07549 685145
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
       </section>
     </div>
