@@ -9,6 +9,9 @@ import { getInstructors } from "@/lib/actions/instructor";
 import { getHomeSettings } from "@/lib/actions/settings";
 import type { HomeSettings } from "@/types/settings";
 
+// Always fetch latest home content (hero image, CTA, etc.) so admin uploads appear immediately
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [instructors, homeSettings] = await Promise.all([
     getInstructors(),
