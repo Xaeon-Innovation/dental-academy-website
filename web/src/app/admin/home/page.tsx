@@ -241,7 +241,6 @@ export default function AdminHomeManagementPage() {
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
                   placeholder="Precision-driven implant dentistry, from placement to perfection."
                   disabled={loading || saving}
-                  required
                 />
               </div>
 
@@ -260,7 +259,6 @@ export default function AdminHomeManagementPage() {
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
                   placeholder="Kaleidoscope Dental Academy exists for clinicians who demand more..."
                   disabled={loading || saving}
-                  required
                 />
               </div>
             </div>
@@ -352,7 +350,6 @@ export default function AdminHomeManagementPage() {
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
                   placeholder="Start your journey"
                   disabled={loading || saving}
-                  required
                 />
               </div>
 
@@ -368,7 +365,6 @@ export default function AdminHomeManagementPage() {
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
                   placeholder="Join the Academy and build precision-driven implant skills..."
                   disabled={loading || saving}
-                  required
                 />
               </div>
             </div>
