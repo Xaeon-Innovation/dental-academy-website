@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import useImagePreloader from "@/hooks/useImagePreloader";
+import LoadingScreen from "@/components/LoadingScreen";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -210,10 +211,8 @@ export default function HeroSequence() {
             </div>
           </div>
           {!isLoaded && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                Preparing sequence…
-              </p>
+            <div className="pointer-events-none absolute inset-0 z-20">
+              <LoadingScreen />
             </div>
           )}
         </div>
