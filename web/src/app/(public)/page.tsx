@@ -7,15 +7,17 @@ import { HomeCtaButtons } from "@/components/HomeCtaButtons";
 import { TextReveal } from "@/components/TextReveal";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
 import { getHomeSettings } from "@/lib/actions/settings";
+import { getTestimonialsForDisplay } from "@/lib/actions/testimonial";
 import type { HomeSettings } from "@/types/settings";
 
 // Always fetch latest home content (hero image, CTA, etc.) so admin uploads appear immediately
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [instructors, homeSettings] = await Promise.all([
+  const [instructors, homeSettings, testimonialsFromDb] = await Promise.all([
     getInstructorsForPage("home"),
     getHomeSettings(),
+    getTestimonialsForDisplay(),
   ]);
 
   const home: HomeSettings = homeSettings ?? {};
@@ -194,8 +196,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials — marquee of cards with name & rating */}
-      <Testimonials />
+      {/* Testimonials — marquee of cards with name & rating (only if 5+ testimonials) */}
+      {testimonialsFromDb.length >= 5 && (
+        <Testimonials items={testimonialsFromDb} />
+      )}
 
       {/* 4. CTA */}
       <section className="relative z-10 bg-background px-4 py-20 text-white md:py-28">

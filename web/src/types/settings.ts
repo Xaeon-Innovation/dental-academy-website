@@ -11,12 +11,16 @@ export interface HomeSettings {
 export interface SiteSettings {
   siteName?: string;
   contactEmail?: string;
+  contactPhone?: string;
+  contactLocation?: string;
+  mapEmbedSrc?: string;
   adminEmails?: string[]; // List of emails allowed to access admin dashboard
   socialLinks?: {
     twitter?: string;
     linkedin?: string;
     facebook?: string;
     instagram?: string;
+    youtube?: string;
   };
   featureFlags?: Record<string, boolean>;
   /** Optional home page content configuration */

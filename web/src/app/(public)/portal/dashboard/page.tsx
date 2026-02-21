@@ -79,12 +79,20 @@ export default function PortalDashboardPage() {
               >
                 ← Home
               </Link>
-              <Link
-                href="/courses"
-                className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
-              >
-                View courses
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/portal/dashboard/testimonials"
+                  className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
+                >
+                  Testimonials
+                </Link>
+                <Link
+                  href="/courses"
+                  className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
+                >
+                  View courses
+                </Link>
+              </div>
             </div>
           </header>
 

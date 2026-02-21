@@ -1,6 +1,15 @@
+"use client";
+
+import type React from "react";
 import { Marquee } from "@/components/ui/marquee";
 
-const testimonials = [
+export type TestimonialItem = {
+  name: string;
+  rating: number;
+  quote: string;
+};
+
+const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
   {
     name: "Dr. Sarah Chen",
     rating: 5,
@@ -49,11 +58,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function TestimonialCard({
-  name,
-  rating,
-  quote,
-}: (typeof testimonials)[number]) {
+function TestimonialCard({ name, rating, quote }: TestimonialItem) {
   return (
     <article className="flex w-[320px] shrink-0 flex-col justify-between rounded-2xl border border-white/5 bg-[#1c1c1e] p-5 transition hover:border-accentGold/50">
       <StarRating rating={rating} />
@@ -65,7 +70,15 @@ function TestimonialCard({
   );
 }
 
-export default function Testimonials() {
+export interface TestimonialsProps {
+  /** When provided and non-empty, used for the marquee; otherwise default list is used. */
+  items?: TestimonialItem[];
+}
+
+const Testimonials: React.FC<TestimonialsProps> = (props) => {
+  const { items } = props;
+  const list =
+    items && items.length > 0 ? items : DEFAULT_TESTIMONIALS;
   return (
     <section
       id="testimonials"
@@ -80,12 +93,14 @@ export default function Testimonials() {
         </h2>
         <div className="mt-10 overflow-hidden">
           <Marquee pauseOnHover repeat={2} className="[--duration:50s]">
-            {testimonials.map((t) => (
-              <TestimonialCard key={t.name} {...t} />
+            {list.map((t, i) => (
+              <TestimonialCard key={`${t.name}-${i}`} {...t} />
             ))}
           </Marquee>
         </div>
       </div>
     </section>
   );
-}
+};
+
+export default Testimonials;
