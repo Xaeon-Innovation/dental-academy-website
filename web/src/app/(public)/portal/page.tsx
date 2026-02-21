@@ -10,6 +10,7 @@ import {
 } from "@/lib/firebase/auth";
 import { createOrUpdateStudentProfile } from "@/lib/actions/student";
 import { useAuth } from "@/contexts/AuthContext";
+import LoadingScreen from "@/components/LoadingScreen";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -120,6 +121,10 @@ function PortalPageContent() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-background px-4 py-16 text-white md:py-24">
@@ -302,11 +307,7 @@ function PortalPageContent() {
 }
 
 function PortalFallback() {
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 text-white">
-      <p className="text-white/70">Loading…</p>
-    </div>
-  );
+  return <LoadingScreen />;
 }
 
 export default function PortalPage() {

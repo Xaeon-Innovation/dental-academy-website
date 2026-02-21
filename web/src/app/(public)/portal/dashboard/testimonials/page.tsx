@@ -16,6 +16,7 @@ import type { Registration } from "@/types/registration";
 import type { Course } from "@/types/course";
 import type { Testimonial } from "@/types/testimonial";
 import StudentDashboardGuard from "../StudentDashboardGuard";
+import LoadingScreen from "@/components/LoadingScreen";
 import { Star } from "lucide-react";
 
 function formatSlug(slug: string): string {
@@ -95,7 +96,7 @@ export default function PortalTestimonialsPage() {
           )}
 
           {loading ? (
-            <p className="text-white/60">Loading…</p>
+            <LoadingScreen />
           ) : eligibleRegistrations.length === 0 ? (
             <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
               <p className="text-sm text-white/60">

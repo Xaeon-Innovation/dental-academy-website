@@ -13,6 +13,7 @@ import type { Course } from "@/types/course";
 import StudentDashboardGuard from "./StudentDashboardGuard";
 import DashboardProfileForm from "./DashboardProfileForm";
 import DashboardSavedFormEditor from "./DashboardSavedFormEditor";
+import LoadingScreen from "@/components/LoadingScreen";
 
 function formatSlug(slug: string): string {
   return slug
@@ -106,7 +107,7 @@ export default function PortalDashboardPage() {
           </header>
 
           {loading ? (
-            <p className="text-white/60">Loading…</p>
+            <LoadingScreen />
           ) : (
             <div className="space-y-10">
               <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
