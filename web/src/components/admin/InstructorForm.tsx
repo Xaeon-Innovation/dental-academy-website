@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, Upload, Image as ImageIcon } from "lucide-react";
 import type { InstructorFormData } from "@/lib/validations/instructor";
-import type { Instructor } from "@/types/instructor";
+import type { Instructor, InstructorPageVisibility } from "@/types/instructor";
+import { INSTRUCTOR_PAGE_KEYS } from "@/types/instructor";
 import { uploadInstructorImage } from "@/lib/actions/upload";
 
 interface InstructorFormProps {
@@ -28,6 +29,7 @@ export default function InstructorForm({ instructor, onSubmit }: InstructorFormP
     bio: instructor?.bio || "",
     badges: instructor?.badges || [],
     imageUrl: instructor?.imageUrl || "",
+    visibleOn: instructor?.visibleOn ?? ["home", "about", "courses"],
   });
 
   function updateField<K extends keyof InstructorFormData>(field: K, value: InstructorFormData[K]) {
@@ -54,6 +56,16 @@ export default function InstructorForm({ instructor, onSubmit }: InstructorFormP
       const badges = [...(prev.badges || [])];
       badges.splice(index, 1);
       return { ...prev, badges };
+    });
+  }
+
+  function toggleVisibleOn(page: InstructorPageVisibility) {
+    setForm((prev) => {
+      const current = prev.visibleOn || [];
+      const next = current.includes(page)
+        ? current.filter((p) => p !== page)
+        : [...current, page];
+      return { ...prev, visibleOn: next };
     });
   }
 
@@ -117,8 +129,8 @@ export default function InstructorForm({ instructor, onSubmit }: InstructorFormP
     const cleanedForm: InstructorFormData = {
       ...form,
       badges: form.badges?.filter((b) => b.trim()) || [],
-      // Normalize imageUrl: convert empty string to undefined, or keep the value
       imageUrl: form.imageUrl?.trim() || undefined,
+      visibleOn: form.visibleOn?.length ? form.visibleOn : undefined,
     } as InstructorFormData;
 
     setLoading(true);
@@ -271,6 +283,39 @@ export default function InstructorForm({ instructor, onSubmit }: InstructorFormP
           <p className="mt-1 text-xs text-white/50">
             Upload an image from your computer (saved to public/images/instructors/) or enter a URL. Max size: 2MB
           </p>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-2 block text-xs text-white/70">
+            Show on pages
+          </label>
+          <p className="mb-3 text-xs text-white/50">
+            Choose where this instructor appears on the site. Uncheck all to hide from public pages until you set visibility.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {INSTRUCTOR_PAGE_KEYS.map((page) => {
+              const label =
+                page === "home"
+                  ? "Home"
+                  : page === "about"
+                    ? "About"
+                    : "Courses";
+              const checked = (form.visibleOn || []).includes(page);
+              return (
+                <label
+                  key={page}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-white/90"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleVisibleOn(page)}
+                    className="h-4 w-4 rounded border-white/20 bg-black/40 text-accentGold focus:ring-accentGold/50"
+                  />
+                  {label}
+                </label>
+              );
+            })}
+          </div>
         </div>
         <div className="sm:col-span-2">
           <div className="mb-2 flex items-center justify-between">

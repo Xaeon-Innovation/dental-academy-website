@@ -42,6 +42,8 @@ type BubbleBackgroundProps = ComponentPropsWithoutRef<"div"> & {
   interactive?: boolean;
   transition?: SpringOptions;
   colors?: BubbleColors;
+  /** Opacity of the bubble gradients (0–1). Default 0.5. */
+  gradientOpacity?: number;
 };
 
 const BLOB_ORIGINS: Array<{ x: string; y: string }> = [
@@ -57,6 +59,7 @@ export function BubbleBackground({
   interactive = false,
   transition = DEFAULT_TRANSITION,
   colors = DEFAULT_COLORS,
+  gradientOpacity = 0.5,
   className,
   ...props
 }: BubbleBackgroundProps) {
@@ -145,7 +148,7 @@ export function BubbleBackground({
                 height: "80%",
                 top: "50%",
                 left: "50%",
-                background: `radial-gradient(circle at center, rgba(${rgb}, 0.5) 0, rgba(${rgb}, 0) 50%)`,
+                background: `radial-gradient(circle at center, rgba(${rgb}, ${gradientOpacity}) 0, rgba(${rgb}, 0) 50%)`,
                 x: "-50%",
                 y: "-50%",
                 transformOrigin: `${BLOB_ORIGINS[i]?.x ?? "50%"} ${BLOB_ORIGINS[i]?.y ?? "50%"}`,
@@ -176,7 +179,7 @@ export function BubbleBackground({
               <motion.div
                 className="absolute inset-0 rounded-full mix-blend-hard-light"
                 style={{
-                  background: `radial-gradient(circle at center, rgba(${c.sixth}, 0.4) 0, rgba(${c.sixth}, 0) 50%)`,
+                  background: `radial-gradient(circle at center, rgba(${c.sixth}, ${gradientOpacity}) 0, rgba(${c.sixth}, 0) 50%)`,
                   x,
                   y,
                 }}

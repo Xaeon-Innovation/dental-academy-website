@@ -15,9 +15,47 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  icons: {
+    icon: [
+      { url: "/logoicoB.png", type: "image/png" },
+      { url: "/favicon.ico", type: "image/x-icon", sizes: "any" },
+    ],
+    apple: "/logoicoB.png",
+  },
   title: "Kaleidoscope Dental Academy",
   description: "Kaleidoscope Dental Academy – iPlace & iRestore training",
+  keywords: [
+    "dental implant training",
+    "iPlace course",
+    "iRestore",
+    "Kaleidoscope Dental Academy",
+    "CPD dental courses",
+    "dental implant education",
+    "implant training UK",
+  ],
+  openGraph: {
+    title: "Kaleidoscope Dental Academy",
+    description: "Kaleidoscope Dental Academy – iPlace & iRestore training",
+    url: "/",
+    siteName: "Kaleidoscope Dental Academy",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kaleidoscope Dental Academy",
+    description: "Kaleidoscope Dental Academy – iPlace & iRestore training",
+  },
+  verification: {
+    ...(process.env.GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.BING_SITE_VERIFICATION
+      ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }
+      : {}),
+  },
 };
 
 export default function RootLayout({

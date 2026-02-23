@@ -11,6 +11,21 @@ const nextConfig = {
     // Use web folder as root so Next doesn't get confused by root package-lock.json
     root: __dirname,
   },
+  async rewrites() {
+    return [
+      // Search engines (Google, Bing) often request /favicon.ico; serve our icon so they show it in results
+      { source: "/favicon.ico", destination: "/logoicoB.png" },
+    ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

@@ -10,9 +10,23 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Globe } from "@/components/globe";
-import { AboutHeroMarquee } from "@/components/AboutHeroMarquee";
+import { AboutHeroBubbleBackground } from "@/components/AboutHeroBubbleBackground";
+import { AboutHeroFlipCard } from "@/components/AboutHeroFlipCard";
 import { TextReveal } from "@/components/TextReveal";
-import { getInstructors } from "@/lib/actions/instructor";
+import type { Metadata } from "next";
+import { getInstructorsForPage } from "@/lib/actions/instructor";
+
+export const metadata: Metadata = {
+  title: "About | Kaleidoscope Dental Academy",
+  description:
+    "Precision-driven implant education. Expert faculty, hands-on training, and ongoing support for dental professionals.",
+  keywords: [
+    "dental implant education",
+    "implant training UK",
+    "Kaleidoscope Dental Academy about",
+    "CPD dental courses",
+  ],
+};
 
 const MISSION_VISION = [
   {
@@ -67,7 +81,7 @@ const STATS = [
 ];
 
 export default async function AboutPage() {
-  const instructors = await getInstructors();
+  const instructors = await getInstructorsForPage("about");
 
   return (
     <div className="bg-background text-white">
@@ -76,16 +90,8 @@ export default async function AboutPage() {
         className="relative min-h-[70vh] overflow-hidden px-4 py-20 md:py-28 lg:py-36"
         aria-labelledby="about-hero-heading"
       >
-        <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
-          <Image
-            src="/images/about-hero-bg.jpg"
-            alt=""
-            fill
-            className="object-cover object-center"
-            priority
-            sizes="100vw"
-            aria-hidden
-          />
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <AboutHeroBubbleBackground interactive={false} />
         </div>
         <div className="relative z-10 mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div>
@@ -93,18 +99,10 @@ export default async function AboutPage() {
               id="about-hero-heading"
               className="font-[var(--font-playfair)] text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl"
             >
-              <span className="block">
-                <TextReveal>Elevating</TextReveal>
-              </span>
-              <span className="block font-normal italic text-accentGold">
-                <TextReveal>Dentistry</TextReveal>
-              </span>
-              <span className="block">
-                <TextReveal>Through</TextReveal>
-              </span>
-              <span className="text-accentGold">
-                <TextReveal>Excellence</TextReveal>
-              </span>
+              <span className="block">Elevating</span>
+              <span className="block font-normal italic text-accentGold">Dentistry</span>
+              <span className="block">Through</span>
+              <span className="text-accentGold">Excellence</span>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/70 md:text-base">
               Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
@@ -119,7 +117,7 @@ export default async function AboutPage() {
               </Link>
             </div>
           </div>
-          <AboutHeroMarquee />
+          <AboutHeroFlipCard />
         </div>
       </section>
 

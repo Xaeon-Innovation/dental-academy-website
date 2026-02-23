@@ -143,7 +143,7 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                             </Link>
                             <EnrollButton
                               courseSlug={course.slug}
-                              isEnrolled={isEnrolled}
+                              isEnrolled={isEnrolled ?? undefined}
                               onClick={(e) => e.stopPropagation()}
                             >
                               Enroll Now

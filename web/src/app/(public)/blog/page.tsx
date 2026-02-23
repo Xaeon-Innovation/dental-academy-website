@@ -1,3 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Blog | Kaleidoscope Dental Academy",
+  description:
+    "Insights and updates on dental implant education, iPlace, iRestore and implant practice.",
+  keywords: [
+    "dental implant blog",
+    "implant education",
+    "Kaleidoscope Dental Academy",
+  ],
+};
+
 export default function BlogListingPage() {
   return (
     <div className="bg-background px-4 py-16 text-white md:py-20">

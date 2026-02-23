@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
 import { instructorSchema, type InstructorFormData } from "@/lib/validations/instructor";
-import type { Instructor, InstructorCreatePayload, InstructorUpdatePayload } from "@/types/instructor";
+import type { Instructor, InstructorPageVisibility } from "@/types/instructor";
 
 function omitUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   return Object.fromEntries(
@@ -52,6 +52,21 @@ export async function getInstructors(): Promise<Instructor[]> {
     console.error("Error fetching instructors:", err);
     return [];
   }
+}
+
+/** Page key for filtering instructors by visibility. */
+export type InstructorPageKey = InstructorPageVisibility;
+
+export async function getInstructorsForPage(
+  page: InstructorPageKey
+): Promise<Instructor[]> {
+  const all = await getInstructors();
+  return all.filter((instructor) => {
+    const visibleOn = instructor.visibleOn;
+    // Backward compat: undefined or empty = show on all pages
+    if (!visibleOn || visibleOn.length === 0) return true;
+    return visibleOn.includes(page);
+  });
 }
 
 export async function getInstructorById(id: string): Promise<Instructor | null> {

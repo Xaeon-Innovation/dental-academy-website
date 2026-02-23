@@ -552,6 +552,15 @@ export default function EnrollmentForm({
                 >
                   Terms and Conditions
                 </Link>
+                {" "}and our{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accentGold underline transition hover:text-accentGold/80"
+                >
+                  Privacy Policy
+                </Link>
                 . *
               </span>
             </label>

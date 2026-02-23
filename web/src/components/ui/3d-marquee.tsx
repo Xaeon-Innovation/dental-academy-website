@@ -17,9 +17,11 @@ function splitArray<T>(arr: T[], numChunks: number): T[][] {
 interface ThreeDMarqueeProps {
   images: string[];
   className?: string;
+  /** Multiplier for scroll duration (e.g. 2 = twice as slow). Default 1. */
+  durationMultiplier?: number;
 }
 
-export function ThreeDMarquee({ images, className }: ThreeDMarqueeProps) {
+export function ThreeDMarquee({ images, className, durationMultiplier = 1 }: ThreeDMarqueeProps) {
   const numColumns = 4;
   const columns = splitArray(images, numColumns);
 
@@ -47,7 +49,7 @@ export function ThreeDMarquee({ images, className }: ThreeDMarqueeProps) {
             key={colIndex}
             images={columnImages}
             direction={colIndex % 2 === 0 ? "up" : "down"}
-            duration={34 + colIndex * 4}
+            duration={(34 + colIndex * 4) * durationMultiplier}
           />
         ))}
       </motion.div>
