@@ -100,6 +100,29 @@ export async function updateHomeSettings(
   }
 }
 
+export async function updateContactSettings(
+  updates: Partial<
+    Pick<
+      SiteSettings,
+      "contactEmail" | "contactPhone" | "contactLocation" | "mapEmbedSrc" | "socialLinks"
+    >
+  >
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const payload: Partial<SiteSettings> = { ...updates };
+    if (updates.socialLinks) {
+      const settings = await getSettings();
+      const current = settings.socialLinks ?? {};
+      payload.socialLinks = { ...current, ...updates.socialLinks };
+    }
+    return await updateSettings(payload);
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to update contact settings";
+    return { success: false, error: message };
+  }
+}
+
 export async function addAdminEmail(
   email: string,
   password: string

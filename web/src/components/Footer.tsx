@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
+import { getSettings } from "@/lib/actions/settings";
 
 const footerLinks = [
   { href: "/", label: "Home" },
@@ -17,16 +18,28 @@ const legalLinks = [
   { href: "/admin/login", label: "Staff login", ariaLabel: "Admin login" },
 ];
 
-const contactEmail = "kaleidoscopedentalacademy@gmail.com";
+const DEFAULT_EMAIL = "kaleidoscopedentalacademy@gmail.com";
 
-const socialLinks = [
-  { href: "https://facebook.com", label: "Facebook", icon: Facebook },
-  { href: "https://instagram.com", label: "Instagram", icon: Instagram },
-  { href: "https://linkedin.com", label: "LinkedIn", icon: Linkedin },
-  { href: "https://youtube.com", label: "YouTube", icon: Youtube },
+const SOCIAL_CONFIG = [
+  { key: "facebook" as const, label: "Facebook", icon: Facebook },
+  { key: "instagram" as const, label: "Instagram", icon: Instagram },
+  { key: "linkedin" as const, label: "LinkedIn", icon: Linkedin },
+  { key: "youtube" as const, label: "YouTube", icon: Youtube },
 ];
 
-export default function Footer() {
+export default async function Footer() {
+  const settings = await getSettings();
+  const contactEmail = settings.contactEmail?.trim() || DEFAULT_EMAIL;
+  const contactPhone = settings.contactPhone?.trim();
+  const socialLinksToShow = SOCIAL_CONFIG.filter(({ key }) => {
+    const url = settings.socialLinks?.[key]?.trim();
+    return url && url !== "";
+  }).map(({ key, label, icon }) => ({
+    href: settings.socialLinks![key]!,
+    label,
+    icon,
+  }));
+
   const year = new Date().getFullYear();
 
   return (
@@ -86,6 +99,16 @@ export default function Footer() {
                   {contactEmail}
                 </a>
               </li>
+              {contactPhone && (
+                <li>
+                  <a
+                    href={`tel:${contactPhone.replace(/\s/g, "")}`}
+                    className="text-sm text-white/55 transition hover:text-accentGold focus:outline-none focus:ring-2 focus:ring-accentGold/50 focus:ring-offset-2 focus:ring-offset-transparent"
+                  >
+                    {contactPhone}
+                  </a>
+                </li>
+              )}
               {legalLinks.map(({ href, label, ariaLabel }) => (
                 <li key={href}>
                   <Link
@@ -99,7 +122,7 @@ export default function Footer() {
               ))}
             </ul>
             <div className="mt-5 flex flex-wrap gap-3">
-              {socialLinks.map(({ href, label, icon: Icon }) => (
+              {socialLinksToShow.map(({ href, label, icon: Icon }) => (
                 <a
                   key={label}
                   href={href}

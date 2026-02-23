@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile, updateStudentSavedForm } from "@/lib/actions/student";
 import { getCourses } from "@/lib/actions/course";
@@ -12,6 +13,7 @@ import type { Course } from "@/types/course";
 import StudentDashboardGuard from "./StudentDashboardGuard";
 import DashboardProfileForm from "./DashboardProfileForm";
 import DashboardSavedFormEditor from "./DashboardSavedFormEditor";
+import LoadingScreen from "@/components/LoadingScreen";
 
 function formatSlug(slug: string): string {
   return slug
@@ -21,7 +23,7 @@ function formatSlug(slug: string): string {
 }
 
 export default function PortalDashboardPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [registrations, setRegistrations] = useState<(Registration & { id: string })[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -79,17 +81,33 @@ export default function PortalDashboardPage() {
               >
                 ← Home
               </Link>
-              <Link
-                href="/courses"
-                className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
-              >
-                View courses
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/portal/dashboard/testimonials"
+                  className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
+                >
+                  Testimonials
+                </Link>
+                <Link
+                  href="/courses"
+                  className="w-fit rounded-full border border-accentGold px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/10"
+                >
+                  View courses
+                </Link>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition hover:border-accentGold/30 hover:bg-accentGold/10 hover:text-accentGold"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sign out
+                </button>
+              </div>
             </div>
           </header>
 
           {loading ? (
-            <p className="text-white/60">Loading…</p>
+            <LoadingScreen />
           ) : (
             <div className="space-y-10">
               <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">

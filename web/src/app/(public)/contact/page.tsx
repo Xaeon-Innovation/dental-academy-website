@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Mail, MapPin, ArrowRight } from "lucide-react";
+import { Mail, MapPin, Phone, ArrowRight } from "lucide-react";
 import { TextReveal } from "@/components/TextReveal";
 import { BubbleBackground } from "@/components/animate-ui/components/backgrounds/bubble";
+import { getSettings } from "@/lib/actions/settings";
 
-const contactEmail = "kaleidoscopedentalacademy@gmail.com";
-
-/* Replace the src below with your own Google Maps embed URL from Google Maps > Share > Embed a map */
-const MAP_EMBED_SRC =
+const DEFAULT_EMAIL = "kaleidoscopedentalacademy@gmail.com";
+const DEFAULT_MAP_EMBED_SRC =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d317718.69319292053!2d-0.3817834!3d51.528308!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47d8a00baf21de75%3A0x52963a5addd52a99!2sLondon%2C%20UK!5e0!3m2!1sen!2s!4v1708000000000!5m2!1sen!2s";
+const DEFAULT_LOCATION =
+  "Training and events are held at selected venues. Details are shared upon registration.";
 
 export const metadata: Metadata = {
   title: "Contact | Kaleidoscope Dental Academy",
@@ -21,7 +22,16 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function ContactPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ContactPage() {
+  const settings = await getSettings();
+  const contactEmail = settings.contactEmail?.trim() || DEFAULT_EMAIL;
+  const contactPhone = settings.contactPhone?.trim();
+  const contactLocation =
+    settings.contactLocation?.trim() || DEFAULT_LOCATION;
+  const mapEmbedSrc = settings.mapEmbedSrc?.trim() || DEFAULT_MAP_EMBED_SRC;
+
   return (
     <div className="bg-background text-white">
       {/* Hero */}
@@ -76,7 +86,7 @@ export default function ContactPage() {
           >
             <TextReveal>Contact details</TextReveal>
           </h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <a
               href={`mailto:${contactEmail}`}
               className="holographic-card group flex items-start gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-accentGold/20"
@@ -95,6 +105,42 @@ export default function ContactPage() {
                 </p>
               </div>
             </a>
+            {contactPhone ? (
+              <a
+                href={`tel:${contactPhone.replace(/\s/g, "")}`}
+                className="holographic-card group flex items-start gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-accentGold/20"
+              >
+                <span
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-accentGold/10 text-accentGold transition group-hover:bg-accentGold/20"
+                  aria-hidden
+                >
+                  <Phone className="h-6 w-6" />
+                </span>
+                <div>
+                  <h3 className="font-semibold tracking-tight text-white">Phone</h3>
+                  <p className="mt-1 text-sm text-white/70">{contactPhone}</p>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-accentGold/90">
+                    Call us
+                  </p>
+                </div>
+              </a>
+            ) : (
+              <div className="holographic-card flex items-start gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-accentGold/20">
+                <span
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-accentGold/10 text-accentGold"
+                  aria-hidden
+                >
+                  <Phone className="h-6 w-6" />
+                </span>
+                <div>
+                  <h3 className="font-semibold tracking-tight text-white">Phone</h3>
+                  <p className="mt-1 text-sm text-white/70">—</p>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-accentGold/90">
+                    Add in Settings
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="holographic-card flex items-start gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-6 hover:border-accentGold/20">
               <span
                 className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-accentGold/10 text-accentGold"
@@ -104,9 +150,7 @@ export default function ContactPage() {
               </span>
               <div>
                 <h3 className="font-semibold tracking-tight text-white">Location</h3>
-                <p className="mt-1 text-sm text-white/70">
-                  Training and events are held at selected venues. Details are shared upon registration.
-                </p>
+                <p className="mt-1 text-sm text-white/70">{contactLocation}</p>
                 <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-accentGold/90">
                   See map below
                 </p>
@@ -137,7 +181,7 @@ export default function ContactPage() {
           <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_60px_rgba(0,0,0,0.4)]">
             <div className="relative aspect-[16/10] w-full min-h-[280px] md:aspect-[21/9] md:min-h-[320px]">
               <iframe
-                src={MAP_EMBED_SRC}
+                src={mapEmbedSrc}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function StudentDashboardGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,11 +17,7 @@ export default function StudentDashboardGuard({ children }: { children: React.Re
   }, [loading, user, isAdmin, router]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-white/60">
-        Loading…
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user || isAdmin) {

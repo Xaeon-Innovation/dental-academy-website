@@ -11,4 +11,5 @@ export const COLLECTIONS = {
   settings: "settings",
   instructors: "instructors",
   students: "students",
+  testimonials: "testimonials",
 } as const;
