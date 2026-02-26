@@ -26,6 +26,17 @@ function getRedirectPath(searchParams: URLSearchParams): string {
   return redirect;
 }
 
+const AUTH_TIMEOUT_MS = 25000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("AUTH_TIMEOUT")), ms)
+    ),
+  ]);
+}
+
 function authErrorMessage(code: string, fallback: string): string {
   const messages: Record<string, string> = {
     "auth/user-not-found": "No account found with this email.",
@@ -70,12 +81,19 @@ function PortalPageContent() {
     setFieldErrors({});
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await withTimeout(
+        signInWithEmailAndPassword(auth, email, password),
+        AUTH_TIMEOUT_MS
+      );
       hasRedirected.current = true;
       router.replace(redirectTo);
     } catch (err: unknown) {
-      const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
-      setError(authErrorMessage(code, "Failed to sign in. Please try again."));
+      if (err instanceof Error && err.message === "AUTH_TIMEOUT") {
+        setError("Request timed out. Please check your connection and try again.");
+      } else {
+        const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
+        setError(authErrorMessage(code, "Failed to sign in. Please try again."));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -98,25 +116,30 @@ function PortalPageContent() {
     }
     setIsLoading(true);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      const result = await createOrUpdateStudentProfile(cred.user.uid, {
-        uid: cred.user.uid,
-        email,
-        phone: parsed.data.phone,
-        displayName: displayName.trim() || undefined,
-      });
-      if (!result.success) {
-        setError(result.error);
-        setIsLoading(false);
-        return;
-      }
+      const signUpPromise = (async () => {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const result = await createOrUpdateStudentProfile(cred.user.uid, {
+          uid: cred.user.uid,
+          email,
+          phone: parsed.data.phone,
+          displayName: displayName.trim() || undefined,
+        });
+        if (!result.success) throw new Error(result.error);
+        return { cred, result };
+      })();
+      await withTimeout(signUpPromise, AUTH_TIMEOUT_MS);
       hasRedirected.current = true;
       // Full page navigation so the next page loads with auth from persistence (avoids frozen UI)
       window.location.href = redirectTo;
       return;
     } catch (err: unknown) {
-      const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
-      setError(authErrorMessage(code, "Failed to create account. Please try again."));
+      if (err instanceof Error && err.message === "AUTH_TIMEOUT") {
+        setError("Request timed out. Please check your connection and try again.");
+      } else {
+        const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
+        const fallback = err instanceof Error ? err.message : "Failed to create account. Please try again.";
+        setError(authErrorMessage(code, fallback));
+      }
     } finally {
       setIsLoading(false);
     }

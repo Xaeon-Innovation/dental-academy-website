@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut as firebaseSignOut, type User } from "@/lib/firebase/auth";
 import { auth } from "@/lib/firebase/auth";
 import { isAdminEmail } from "@/lib/actions/settings";
@@ -20,21 +20,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
+  const adminCheckEmailRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      
-      // Check if user email is in admin list
-      if (user?.email) {
-        const adminStatus = await isAdminEmail(user.email);
-        setIsAdmin(adminStatus);
-      } else {
-        setIsAdmin(false);
-      }
-      
       setLoading(false);
+
+      if (!user?.email) {
+        setIsAdmin(false);
+        adminCheckEmailRef.current = null;
+        return;
+      }
+
+      const emailForThisCheck = user.email;
+      adminCheckEmailRef.current = emailForThisCheck;
+      isAdminEmail(user.email)
+        .then((adminStatus) => {
+          if (adminCheckEmailRef.current === emailForThisCheck) {
+            setIsAdmin(adminStatus);
+          }
+        })
+        .catch(() => {
+          if (adminCheckEmailRef.current === emailForThisCheck) {
+            setIsAdmin(false);
+          }
+        });
     });
 
     return () => unsubscribe();
