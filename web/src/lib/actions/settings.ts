@@ -8,7 +8,9 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
+import { getAuth } from "firebase-admin/auth";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
+import { getAdminApp } from "@/lib/firebase/admin";
 import type { SiteSettings, HomeSettings } from "@/types/settings";
 
 const SETTINGS_DOC_ID = "main";
@@ -154,27 +156,50 @@ export async function addAdminEmail(
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // First, create the Firebase user via API route
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    
-    const createUserResponse = await fetch(
-      `${baseUrl}/api/admin/create-user`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+    // Create the Firebase user via Admin SDK (no self-request)
+    try {
+      const adminApp = getAdminApp();
+      const adminAuth = getAuth(adminApp);
+      await adminAuth.createUser({
+        email: normalizedEmail,
+        password,
+        emailVerified: false,
+      });
+    } catch (createErr: unknown) {
+      const err = createErr as { code?: string; message?: string };
+      if (err.code === "auth/email-already-exists") {
+        // User exists in Firebase; continue to add to admin list
+      } else if (err.code === "auth/invalid-email") {
+        return { success: false, error: "Invalid email" };
+      } else if (err.code === "auth/weak-password") {
+        return {
+          success: false,
+          error:
+            "Password must contain uppercase, lowercase, number, and special character",
+        };
+      } else if (err.code === "auth/operation-not-allowed") {
+        return {
+          success: false,
+          error:
+            "Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method",
+        };
+      } else if (
+        err.message?.includes("Firebase Admin SDK") ||
+        err.message?.includes("service account") ||
+        err.message?.includes("Admin SDK")
+      ) {
+        return {
+          success: false,
+          error:
+            "Firebase Admin SDK is not configured. Set up the Admin SDK (see FIREBASE_ADMIN_SETUP.md) to create new admin users from this page, or create the user in Firebase Console → Authentication and use 'Add existing user' below.",
+        };
+      } else {
+        const msg = err.message || (createErr instanceof Error ? createErr.message : "Failed to create user");
+        return { success: false, error: msg };
       }
-    );
-
-    const createUserResult = await createUserResponse.json();
-
-    if (!createUserResult.success && createUserResult.error !== "User already exists") {
-      return { success: false, error: createUserResult.error || createUserResult.message };
     }
 
-    // Then add email to admin list
+    // Add email to admin list
     const settings = await getSettings();
     const adminEmails = settings.adminEmails || [];
 
