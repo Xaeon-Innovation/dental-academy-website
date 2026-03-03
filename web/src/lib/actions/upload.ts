@@ -10,10 +10,6 @@ function validateImageFile(file: File): UploadResult | null {
   if (!file.type.startsWith("image/")) {
     return { success: false, error: "File must be an image" };
   }
-  const maxSize = 2 * 1024 * 1024;
-  if (file.size > maxSize) {
-    return { success: false, error: "Image size must be less than 2MB" };
-  }
   return null;
 }
 
@@ -105,4 +101,34 @@ export async function uploadHomeImage(file: File): Promise<UploadResult> {
     return uploadToBlob(file, "home");
   }
   return saveImageToPublicFolder(file, "home");
+}
+
+/**
+ * Upload case image.
+ * On Vercel uses Vercel Blob; otherwise saves to public/images/cases/.
+ */
+export async function uploadCaseImage(file: File): Promise<UploadResult> {
+  try {
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      return { success: false, error: "File must be an image" };
+    }
+
+    // Log file info for debugging
+    console.log("Uploading case image:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN,
+    });
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      return await uploadToBlob(file, "cases");
+    }
+    return await saveImageToPublicFolder(file, "cases");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to upload image";
+    console.error("Case image upload error:", err);
+    return { success: false, error: message };
+  }
 }

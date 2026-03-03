@@ -24,10 +24,12 @@ export function HeroParallax({
   products,
   title = "The Ultimate development studio",
   description = "We build beautiful products with the latest technologies and frameworks. We are a team of passionate developers and designers that love to build amazing products.",
+  onCaseClick,
 }: {
   products: HeroParallaxProduct[];
   title?: string;
   description?: string;
+  onCaseClick?: (caseId: string) => void;
 }) {
   const firstRow = products.slice(0, 5);
   const secondRow = products.slice(5, 10);
@@ -97,6 +99,7 @@ export function HeroParallax({
             offset={rowOffsets[0]}
             onPrev={() => setRowOffset(0, (o) => o - 1)}
             onNext={() => setRowOffset(0, (o) => o + 1)}
+            onCaseClick={onCaseClick}
           />
           <CaseRow
             products={secondRow}
@@ -105,6 +108,7 @@ export function HeroParallax({
             offset={rowOffsets[1]}
             onPrev={() => setRowOffset(1, (o) => o - 1)}
             onNext={() => setRowOffset(1, (o) => o + 1)}
+            onCaseClick={onCaseClick}
           />
           <CaseRow
             products={thirdRow}
@@ -113,6 +117,7 @@ export function HeroParallax({
             offset={rowOffsets[2]}
             onPrev={() => setRowOffset(2, (o) => o - 1)}
             onNext={() => setRowOffset(2, (o) => o + 1)}
+            onCaseClick={onCaseClick}
           />
         </div>
       </motion.div>
@@ -129,6 +134,7 @@ function CaseRow({
   offset,
   onPrev,
   onNext,
+  onCaseClick,
 }: {
   products: HeroParallaxProduct[];
   scrollTranslate: MotionValue<number>;
@@ -136,6 +142,7 @@ function CaseRow({
   offset: number;
   onPrev: () => void;
   onNext: () => void;
+  onCaseClick?: (caseId: string) => void;
 }) {
   const count = products.length;
 
@@ -155,6 +162,7 @@ function CaseRow({
               product={product}
               translate={scrollTranslate}
               key={product.title}
+              onCaseClick={onCaseClick}
             />
           ))}
         </motion.div>
@@ -203,14 +211,26 @@ function Header({
 function ProductCard({
   product,
   translate,
+  onCaseClick,
 }: {
   product: HeroParallaxProduct;
   translate: MotionValue<number>;
+  onCaseClick?: (caseId: string) => void;
 }) {
   const isExternal = product.link.startsWith("http");
+  const isCaseLink = product.link.startsWith("#case-");
+  const caseId = isCaseLink ? product.link.replace("#case-", "") : null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isCaseLink && caseId && onCaseClick) {
+      e.preventDefault();
+      onCaseClick(caseId);
+    }
+  };
+
   const linkProps = isExternal
     ? { href: product.link, target: "_blank", rel: "noopener noreferrer" as const }
-    : { href: product.link };
+    : { href: product.link, onClick: handleClick };
 
   return (
     <motion.div
@@ -220,7 +240,7 @@ function ProductCard({
     >
       <a
         {...linkProps}
-        className="block group-hover/product:shadow-2xl"
+        className={`block group-hover/product:shadow-2xl ${isCaseLink ? "cursor-pointer" : ""}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
