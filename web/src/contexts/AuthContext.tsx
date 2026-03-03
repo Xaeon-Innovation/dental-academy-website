@@ -19,8 +19,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const adminCheckEmailRef = useRef<string | null>(null);
+
+  // Ensure consistent initial render
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -55,8 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await firebaseSignOut(auth);
       setIsAdmin(false);
-      router.push("/");
-      router.refresh();
+      if (mounted) {
+        router.push("/");
+        router.refresh();
+      }
     } catch (error) {
       console.error("Error signing out:", error);
     }

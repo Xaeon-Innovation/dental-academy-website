@@ -10,9 +10,9 @@ function validateImageFile(file: File): UploadResult | null {
   if (!file.type.startsWith("image/")) {
     return { success: false, error: "File must be an image" };
   }
-  const maxSize = 2 * 1024 * 1024;
+  const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {
-    return { success: false, error: "Image size must be less than 2MB" };
+    return { success: false, error: "Image size must be less than 10MB" };
   }
   return null;
 }
@@ -39,11 +39,26 @@ async function uploadToBlob(
       access: "public",
       addRandomSuffix: true,
     });
-    return { success: true, url: blob.url };
+    // Ensure URL is a string and result is serializable
+    const result = { success: true as const, url: String(blob.url) };
+    try {
+      JSON.stringify(result);
+      return result;
+    } catch (serializeErr) {
+      console.error("Serialization error in uploadToBlob:", serializeErr);
+      return { success: false as const, error: "Failed to serialize upload result" };
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to upload image";
     console.error("Blob upload error:", err);
-    return { success: false, error: message };
+    const errorResult = { success: false as const, error: String(message) };
+    try {
+      JSON.stringify(errorResult);
+      return errorResult;
+    } catch (serializeErr) {
+      console.error("Serialization error in uploadToBlob error:", serializeErr);
+      return { success: false as const, error: "Failed to upload image" };
+    }
   }
 }
 
@@ -77,11 +92,26 @@ async function saveImageToPublicFolder(
     await writeFile(filePath, buffer);
 
     const url = `/images/${subdirectory}/${fullFileName}`;
-    return { success: true, url };
+    // Ensure result is serializable
+    const result = { success: true as const, url: String(url) };
+    try {
+      JSON.stringify(result);
+      return result;
+    } catch (serializeErr) {
+      console.error("Serialization error in saveImageToPublicFolder:", serializeErr);
+      return { success: false as const, error: "Failed to serialize upload result" };
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to upload image";
     console.error("Upload error:", err);
-    return { success: false, error: message };
+    const errorResult = { success: false as const, error: String(message) };
+    try {
+      JSON.stringify(errorResult);
+      return errorResult;
+    } catch (serializeErr) {
+      console.error("Serialization error in saveImageToPublicFolder error:", serializeErr);
+      return { success: false as const, error: "Failed to upload image" };
+    }
   }
 }
 
@@ -105,4 +135,15 @@ export async function uploadHomeImage(file: File): Promise<UploadResult> {
     return uploadToBlob(file, "home");
   }
   return saveImageToPublicFolder(file, "home");
+}
+
+/**
+ * Upload case image.
+ * On Vercel (when BLOB_READ_WRITE_TOKEN is set) uses Vercel Blob; otherwise saves to public/images/cases/.
+ */
+export async function uploadCaseImage(file: File): Promise<UploadResult> {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    return uploadToBlob(file, "cases");
+  }
+  return saveImageToPublicFolder(file, "cases");
 }

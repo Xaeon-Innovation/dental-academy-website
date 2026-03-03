@@ -66,11 +66,11 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} bg-background text-textLight antialiased`}
       >
         <AuthProvider>
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+          <div className="flex min-h-screen flex-col" suppressHydrationWarning>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
         </AuthProvider>
       </body>
     </html>

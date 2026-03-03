@@ -49,6 +49,33 @@ body {
   animation: marquee-scroll-vertical var(--duration, 40s) linear infinite;
 }
 
+/* Screenshot protection for cases */
+.case-protected {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.case-protected img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+
+.case-protected * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 /* Holographic card – sweep + glow on hover (accent gold to match site) */
 .holographic-card {
   position: relative;

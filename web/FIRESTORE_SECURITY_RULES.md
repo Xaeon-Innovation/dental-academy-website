@@ -40,6 +40,12 @@ service cloud.firestore {
       allow write: if false; // Only server-side writes allowed
     }
     
+    // Public read access for cases
+    match /cases/{caseId} {
+      allow read: if true;
+      allow write: if false; // Only server-side writes allowed
+    }
+    
     // Public write for registrations (form submissions)
     match /registrations/{registrationId} {
       allow read: if false; // Only server-side reads

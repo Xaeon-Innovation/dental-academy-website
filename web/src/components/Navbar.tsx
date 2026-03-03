@@ -19,16 +19,31 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const enrollHref = user ? "/courses" : "/portal?redirect=" + encodeURIComponent("/courses");
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Ensure hydration matches server render
+  // During SSR, we always render the "Enroll" button to match initial client render
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Always use the same href during SSR to prevent hydration mismatch
+  // Only compute user-dependent href after mounting
+  const enrollHref = !isMounted || !user 
+    ? `/portal?redirect=${encodeURIComponent("/courses")}` 
+    : "/courses";
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
+    // Only fetch profile after component is mounted to prevent hydration issues
+    if (!isMounted) return;
+    
     if (!user?.uid) {
       const id = setTimeout(() => setProfileDisplayName(null), 0);
       return () => clearTimeout(id);
@@ -40,16 +55,18 @@ export default function Navbar() {
     return () => {
       cancelled = true;
     };
-  }, [user?.uid]);
+  }, [user?.uid, isMounted]);
 
-  const displayLabel =
-    profileDisplayName?.trim() ||
-    user?.displayName?.trim() ||
-    user?.email?.split("@")[0] ||
-    "Account";
+  // Only compute displayLabel after mounting to prevent hydration mismatch
+  const displayLabel = !isMounted
+    ? "Account"
+    : profileDisplayName?.trim() ||
+      user?.displayName?.trim() ||
+      user?.email?.split("@")[0] ||
+      "Account";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/5 bg-black/40 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-white/5 bg-black/40 backdrop-blur" suppressHydrationWarning>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:py-4">
         <Link href="/" className="flex items-center">
           <Image
@@ -96,7 +113,23 @@ export default function Navbar() {
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          {user ? (
+          {/* Only render user-specific content after hydration to prevent mismatch */}
+          {/* During SSR and initial client render, always show "Enroll" button */}
+          {!isMounted ? (
+            <Link
+              href={`/portal?redirect=${encodeURIComponent("/courses")}`}
+              className="rounded-full border border-accentGold bg-accentGold px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
+            >
+              Enroll
+            </Link>
+          ) : loading ? (
+            <Link
+              href={`/portal?redirect=${encodeURIComponent("/courses")}`}
+              className="rounded-full border border-accentGold bg-accentGold px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
+            >
+              Enroll
+            </Link>
+          ) : user ? (
             isAdmin ? (
               <Link
                 href="/admin"
