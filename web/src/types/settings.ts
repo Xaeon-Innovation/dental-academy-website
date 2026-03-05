@@ -1,3 +1,14 @@
+export interface VideoTestimonialItem {
+  id: string;
+  name: string;
+  credentials?: string;
+  quote?: string;
+  videoUrl: string;
+  posterUrl?: string;
+  /** When false, video is hidden from the home page but kept in the list. Default true. */
+  showOnHome?: boolean;
+}
+
 export interface HomeSettings {
   philosophyHeading?: string;
   philosophyTitle?: string;
@@ -6,6 +17,8 @@ export interface HomeSettings {
   ctaTitle?: string;
   ctaBody?: string;
   ctaBackgroundImageUrl?: string;
+  /** Video testimonials shown on the home page (uploaded via admin). */
+  videoTestimonials?: VideoTestimonialItem[];
 }
 
 export interface SiteSettings {
@@ -15,6 +28,8 @@ export interface SiteSettings {
   contactLocation?: string;
   mapEmbedSrc?: string;
   adminEmails?: string[]; // List of emails allowed to access admin dashboard
+  /** When false, Blog link is hidden from header and footer. Default true. */
+  showBlogInNav?: boolean;
   socialLinks?: {
     twitter?: string;
     linkedin?: string;

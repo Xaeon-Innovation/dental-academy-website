@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile } from "@/lib/actions/student";
 import { Menu, X } from "lucide-react";
 
-const navLinks = [
+const ALL_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/courses", label: "Courses" },
@@ -17,7 +17,10 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boolean }) {
+  const navLinks = showBlogInNav
+    ? ALL_NAV_LINKS
+    : ALL_NAV_LINKS.filter((link) => link.href !== "/blog");
   const pathname = usePathname();
   const { user, isAdmin } = useAuth();
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);

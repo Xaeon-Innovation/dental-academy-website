@@ -21,7 +21,7 @@ export function HomeCtaButtons() {
         href={isStudent ? "/portal/dashboard" : "/portal"}
         className="btn-liquid inline-flex items-center gap-2 px-8 py-3 text-sm font-semibold uppercase tracking-[0.16em]"
       >
-        {isStudent ? "Dashboard" : "Student portal"}
+        {isStudent ? "Dashboard" : "Delegate portal"}
       </Link>
     </div>
   );

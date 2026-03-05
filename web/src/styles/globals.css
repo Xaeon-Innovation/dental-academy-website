@@ -194,6 +194,19 @@ body {
   border-radius: 1.5rem;
 }
 
+/* Video testimonial card — Uiverse.io by Yaseen549 */
+.video-testimonial-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border-radius: 30px;
+  background: #212121;
+  box-shadow: 15px 15px 30px rgb(25, 25, 25),
+    -15px -15px 30px rgb(60, 60, 60);
+  overflow: hidden;
+}
+
 .course-track-glow::before {
   content: "";
   position: absolute;

@@ -64,7 +64,7 @@ export function RegisterNowButton({ courseSlug, courseId }: RegisterNowButtonPro
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-accentGold/60 bg-accentGold/10 py-3.5 text-sm font-semibold uppercase tracking-wider text-accentGold transition hover:bg-accentGold/20"
         >
           <LayoutDashboard className="h-4 w-4" aria-hidden />
-          Go to student portal to manage enrolled courses
+          Go to Delegate portal to manage enrolled courses
         </Link>
       </div>
     );

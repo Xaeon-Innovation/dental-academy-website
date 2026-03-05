@@ -39,7 +39,7 @@ export async function getTestimonialsForDisplay(): Promise<TestimonialDisplayIte
         const data = d.data();
         const createdAt = toDate(data.createdAt);
         return {
-          name: (data.displayName as string)?.trim() || "Student",
+          name: (data.displayName as string)?.trim() || "Delegate",
           rating: typeof data.rating === "number" ? data.rating : 5,
           quote: (data.quote as string)?.trim() || "",
           _createdAt: createdAt ? createdAt.getTime() : 0,
@@ -58,7 +58,7 @@ export async function getTestimonialsForDisplay(): Promise<TestimonialDisplayIte
       const data = d.data();
       const createdAt = toDate(data.createdAt);
       return {
-        name: (data.displayName as string)?.trim() || "Student",
+        name: (data.displayName as string)?.trim() || "Delegate",
         rating: typeof data.rating === "number" ? data.rating : 5,
         quote: (data.quote as string)?.trim() || "",
         _createdAt: createdAt ? createdAt.getTime() : 0,

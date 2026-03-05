@@ -138,7 +138,7 @@ export default function AdminRegistrationsPage() {
       const totalResult = computeRegistrationTotal(reg, course ?? undefined);
       return {
         "Enrollment ID": reg.id,
-        "Student Name": reg.name,
+        "Delegate Name": reg.name,
         "Email": reg.email,
         "Phone": reg.phone ?? "",
         "Course": courseTitle(reg.courseId),
@@ -259,7 +259,7 @@ export default function AdminRegistrationsPage() {
           placeholder={
             activeTab === "users"
               ? "Search by name, email, or phone..."
-              : "Search by student name, email, or course..."
+              : "Search by delegate name, email, or course..."
           }
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -369,7 +369,7 @@ export default function AdminRegistrationsPage() {
               <thead>
                 <tr className="border-b border-white/10">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
-                    Student Name
+                    Delegate Name
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
                     Email

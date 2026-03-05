@@ -66,7 +66,7 @@ export default function PortalTestimonialsPage() {
   const defaultDisplayName =
     profile?.displayName?.trim() ||
     user?.email?.split("@")[0] ||
-    "Student";
+    "Delegate";
 
   return (
     <StudentDashboardGuard>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import HeroSequence from "@/components/HeroSequence";
 import ScrollIndicator from "@/components/ScrollIndicator";
 import Testimonials from "@/components/Testimonials";
+import { VideoTestimonialsSection } from "@/components/VideoTestimonialsSection";
 import { HomeCtaButtons } from "@/components/HomeCtaButtons";
 import { TextReveal } from "@/components/TextReveal";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
@@ -28,7 +29,7 @@ export default async function HomePage() {
     "Precision-driven implant dentistry, from placement to perfection.";
   const philosophyBody =
     home.philosophyBody ||
-    "Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes.";
+    "Kaleidoscope Dental Academy exists for delegates who demand more: more clarity, more control, and more repeatable outcomes.";
   const philosophyImageSrc =
     home.philosophyImageUrl || "/images/philosophy/philosophy-image.png";
 
@@ -136,7 +137,7 @@ export default async function HomePage() {
             <TextReveal>Expert faculty. Real-world focus.</TextReveal>
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70 md:text-base">
-            Learn from clinicians and educators who combine years of practice with a commitment to structured, hands-on training.
+            Learn from delegates and educators who combine years of practice with a commitment to structured, hands-on training.
           </p>
           <div className="mt-12 flex flex-wrap justify-center gap-6">
             {instructors.length === 0 ? (
@@ -200,6 +201,9 @@ export default async function HomePage() {
       {testimonialsFromDb.length >= 5 && (
         <Testimonials items={testimonialsFromDb} />
       )}
+
+      {/* Video testimonials — grid of video cards (from admin uploads) */}
+      <VideoTestimonialsSection items={home.videoTestimonials} />
 
       {/* 4. CTA */}
       <section className="relative z-10 bg-background px-4 py-20 text-white md:py-28">

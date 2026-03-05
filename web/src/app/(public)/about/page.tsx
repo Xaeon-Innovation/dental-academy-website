@@ -32,7 +32,7 @@ const MISSION_VISION = [
   {
     icon: Target,
     title: "Our Mission",
-    text: "To deliver precision-driven implant education that equips clinicians with the skills, protocols, and confidence to achieve repeatable outcomes in placement and restoration.",
+    text: "To deliver precision-driven implant education that equips delegates with the skills, protocols, and confidence to achieve repeatable outcomes in placement and restoration.",
   },
   {
     icon: Eye,
@@ -45,7 +45,7 @@ const FEATURES = [
   {
     icon: GraduationCap,
     title: "Expert Faculty",
-    description: "Learn from clinicians and educators with years of hands-on experience and a focus on structured, repeatable protocols.",
+    description: "Learn from delegates and educators with years of hands-on experience and a focus on structured, repeatable protocols.",
   },
   {
     icon: Microscope,
@@ -105,7 +105,7 @@ export default async function AboutPage() {
               <span className="text-accentGold">Excellence</span>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/70 md:text-base">
-              Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
+              Kaleidoscope Dental Academy exists for delegates who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
             </p>
             <div className="mt-8">
               <Link
@@ -207,7 +207,7 @@ export default async function AboutPage() {
             <TextReveal>Why the Academy</TextReveal>
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/70 md:text-base">
-            Structured education designed for clinicians who want to grow their implant practice with confidence.
+            Structured education designed for delegates who want to grow their implant practice with confidence.
           </p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, description }) => (
@@ -326,7 +326,7 @@ export default async function AboutPage() {
             <TextReveal>Ready to master your craft?</TextReveal>
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-white/70 md:text-base">
-            Join clinicians who have elevated their implant practice through structured education, hands-on training, and ongoing support from the Academy.
+            Join delegates who have elevated their implant practice through structured education, hands-on training, and ongoing support from the Academy.
           </p>
           <div className="mt-8 flex justify-center">
             <Link

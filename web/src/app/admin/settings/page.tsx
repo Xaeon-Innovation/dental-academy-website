@@ -1,5 +1,6 @@
 import AdminEmailManager from "@/components/admin/AdminEmailManager";
 import ContactInfoEditor from "@/components/admin/ContactInfoEditor";
+import BlogNavToggle from "@/components/admin/BlogNavToggle";
 
 export default function AdminSettingsPage() {
   return (
@@ -12,6 +13,8 @@ export default function AdminSettingsPage() {
           Manage site settings and admin access
         </p>
       </div>
+
+      <BlogNavToggle />
 
       <ContactInfoEditor />
 

@@ -55,6 +55,8 @@ export interface Course {
   track?: string;
   level?: string;
   imageUrl?: string;
+  /** Card layout/thumbnail image (courses listing). Shown with left-to-right gradient. */
+  layoutImageUrl?: string;
   dates?: string[];
   createdAt?: Date;
   updatedAt?: Date;

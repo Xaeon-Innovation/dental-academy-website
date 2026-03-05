@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { getSettings } from "@/lib/actions/settings";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -55,11 +56,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const settings = await getSettings();
+  const showBlogInNav = settings.showBlogInNav !== false;
+
   return (
     <html lang="en">
       <body
@@ -67,7 +71,7 @@ export default function RootLayout({
       >
         <AuthProvider>
         <div className="flex min-h-screen flex-col">
-          <Navbar />
+          <Navbar showBlogInNav={showBlogInNav} />
           <main className="flex-1">{children}</main>
           <Footer />
         </div>

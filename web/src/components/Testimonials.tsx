@@ -89,7 +89,7 @@ const Testimonials: React.FC<TestimonialsProps> = (props) => {
           Testimonials
         </p>
         <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-          What clinicians say about the Academy
+          What delegates say about the Academy
         </h2>
         <div className="mt-10 overflow-hidden">
           <Marquee pauseOnHover repeat={2} className="[--duration:50s]">

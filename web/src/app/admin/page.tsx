@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-white/10 bg-black/40 p-4 transition hover:border-accentGold/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/70">Total Students</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/70">Total Delegates</p>
               <p className="mt-2 text-2xl font-bold text-white">{stats.totalStudents}</p>
             </div>
             <div className="rounded-full bg-accentGold/20 p-3">
@@ -228,7 +228,7 @@ export default function AdminDashboardPage() {
             href="/admin/registrations?tab=users"
             className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 p-4 transition hover:border-accentGold/30 hover:bg-black/60"
           >
-            <span className="text-sm font-medium text-white">Manage Students</span>
+            <span className="text-sm font-medium text-white">Manage Delegates</span>
             <Users className="h-4 w-4 text-white/70" />
           </Link>
 
@@ -246,14 +246,14 @@ export default function AdminDashboardPage() {
       <div>
         <h2 className="mb-4 font-[var(--font-playfair)] text-xl tracking-tight">Recent Activity</h2>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Latest Student Registrations */}
+          {/* Latest Delegate Registrations */}
           <div className="rounded-lg border border-white/10 bg-black/40">
             <div className="border-b border-white/10 p-4">
-              <h3 className="font-semibold text-white">Latest Student Registrations</h3>
+              <h3 className="font-semibold text-white">Latest Delegate Registrations</h3>
             </div>
             <div className="divide-y divide-white/10">
               {recentStudents.length === 0 ? (
-                <div className="p-4 text-center text-sm text-white/70">No student registrations yet</div>
+                <div className="p-4 text-center text-sm text-white/70">No delegate registrations yet</div>
               ) : (
                 recentStudents.map((student) => (
                   <div key={student.id} className="p-4 transition hover:bg-white/5">
@@ -275,7 +275,7 @@ export default function AdminDashboardPage() {
                 href="/admin/registrations?tab=users"
                 className="flex items-center justify-center gap-2 text-sm text-accentGold transition hover:text-accentGold/80"
               >
-                View All Students
+                View All Delegates
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
