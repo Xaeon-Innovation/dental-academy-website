@@ -105,9 +105,17 @@ export async function uploadHomeImage(file: File): Promise<UploadResult> {
 
 /**
  * Upload course layout/thumbnail image (for course cards on courses page).
- * On Vercel uses Vercel Blob (path prefix "courses"); otherwise saves to public/images/courses/.
+ * On Vercel always uses Vercel Blob (path prefix "courses") so images are served correctly in production.
+ * Locally uses Blob if BLOB_READ_WRITE_TOKEN is set, otherwise saves to public/images/courses/.
  */
 export async function uploadCourseLayoutImage(file: File): Promise<UploadResult> {
+  if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return {
+      success: false,
+      error:
+        "Course card images require Vercel Blob in production. Add BLOB_READ_WRITE_TOKEN in your Vercel project settings.",
+    };
+  }
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     return uploadToBlob(file, "courses");
   }
