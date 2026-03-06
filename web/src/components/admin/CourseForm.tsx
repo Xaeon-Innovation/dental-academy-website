@@ -416,7 +416,7 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
           Card layout image
         </h2>
         <p className="text-xs text-white/60">
-          Optional thumbnail shown on the courses listing. Displayed with a left-to-right gradient (transparent on the left).
+          Optional cover image for the course card on the courses listing (shown as full-card background, faded on the left for text). You can upload a new image, change it by uploading again, or remove it with the × on the preview. Remember to save the course after changing or removing.
         </p>
         <div className="space-y-3">
           {layoutImagePreview && (

@@ -73,19 +73,29 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                 <article
                   key={course.slug}
                   className={`group relative overflow-hidden rounded-3xl border transition-all duration-500 ease-in-out ${
-                    isExpanded
-                      ? "border-accentGold/30 bg-gradient-to-r from-white/[0.05] to-black/90 shadow-[0_24px_80px_rgba(201,168,110,0.15)]"
-                      : "border-white/5 bg-gradient-to-r from-white/[0.03] to-black/90 shadow-[0_18px_60px_rgba(0,0,0,0.85)]"
+                    hasLayoutImage
+                      ? isExpanded
+                        ? "border-accentGold/30 shadow-[0_24px_80px_rgba(201,168,110,0.15)]"
+                        : "border-white/5 shadow-[0_18px_60px_rgba(0,0,0,0.85)]"
+                      : isExpanded
+                        ? "border-accentGold/30 bg-gradient-to-r from-white/[0.05] to-black/90 shadow-[0_24px_80px_rgba(201,168,110,0.15)]"
+                        : "border-white/5 bg-gradient-to-r from-white/[0.03] to-black/90 shadow-[0_18px_60px_rgba(0,0,0,0.85)]"
                   }`}
                 >
-                  <div
-                    className={
-                      hasLayoutImage
-                        ? "flex flex-col md:flex-row"
-                        : ""
-                    }
-                  >
-                    <div className="p-6 flex-1 min-w-0">
+                  {hasLayoutImage && course.layoutImageUrl && (
+                    <div
+                      className="absolute inset-0 z-0 rounded-3xl overflow-hidden"
+                      aria-hidden
+                    >
+                      <img
+                        src={course.layoutImageUrl}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
+                    </div>
+                  )}
+                  <div className="relative z-10 p-6 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       {course.cpd && (
                         <span className="inline-block rounded-full border border-accentGold/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-accentGold">
@@ -177,20 +187,6 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                         →
                       </span>
                     </button>
-                    </div>
-                    {hasLayoutImage && course.layoutImageUrl && (
-                      <div
-                        className="relative w-full md:w-[42%] min-h-[200px] md:min-h-[220px] flex-shrink-0 bg-black/40"
-                        aria-hidden
-                      >
-                        <img
-                          src={course.layoutImageUrl}
-                          alt=""
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/90" />
-                      </div>
-                    )}
                   </div>
                 </article>
               );
