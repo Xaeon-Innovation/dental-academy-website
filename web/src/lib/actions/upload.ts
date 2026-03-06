@@ -124,23 +124,20 @@ export async function uploadCourseLayoutImage(file: File): Promise<UploadResult>
 
 /**
  * Upload case image.
- * On Vercel uses Vercel Blob; otherwise saves to public/images/cases/.
+ * On Vercel always uses Vercel Blob; locally uses Blob if token set, else public/images/cases/.
  */
 export async function uploadCaseImage(file: File): Promise<UploadResult> {
   try {
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       return { success: false, error: "File must be an image" };
     }
-
-    // Log file info for debugging
-    console.log("Uploading case image:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN,
-    });
-
+    if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+      return {
+        success: false,
+        error:
+          "Case images require Vercel Blob in production. Add BLOB_READ_WRITE_TOKEN in your Vercel project settings.",
+      };
+    }
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       return await uploadToBlob(file, "cases");
     }

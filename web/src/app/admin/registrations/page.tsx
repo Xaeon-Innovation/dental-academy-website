@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search, Eye, Trash2, Download } from "lucide-react";
-import * as XLSX from "xlsx";
 import { getAllStudents } from "@/lib/actions/student";
 import { getAllRegistrations, updateRegistrationStatus, deleteRegistration } from "@/lib/actions/registration";
 import { getCourses } from "@/lib/actions/course";
@@ -131,7 +130,8 @@ export default function AdminRegistrationsPage() {
     }
   }
 
-  function handleExportExcel() {
+  async function handleExportExcel() {
+    const XLSX = await import("xlsx");
     const courseTitle = (id: string) => courses.get(id)?.title ?? id;
     const rows = registrations.map((reg) => {
       const course = courses.get(reg.courseId);

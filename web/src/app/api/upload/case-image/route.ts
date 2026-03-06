@@ -26,7 +26,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload to Vercel Blob if token is available
+    // On Vercel, case images must use Blob (filesystem is not persistent)
+    if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Case images require Vercel Blob in production. Add BLOB_READ_WRITE_TOKEN in your Vercel project settings.",
+        },
+        { status: 503 }
+      );
+    }
+
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       try {
         const lastDot = file.name.lastIndexOf(".");
@@ -51,7 +62,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback to local file system
+    // Local dev only: fallback to filesystem
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
