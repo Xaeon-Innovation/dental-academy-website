@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src --ext .ts,.tsx",
@@ -31,7 +31,7 @@
     "@types/react-dom": "latest",
     "autoprefixer": "latest",
     "cross-env": "^10.1.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9.0.0",
     "eslint-config-next": "latest",
     "eslint-config-prettier": "latest",
     "husky": "latest",

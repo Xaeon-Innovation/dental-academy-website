@@ -10,7 +10,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Globe } from "@/components/globe";
-import { AboutHeroMarquee } from "@/components/AboutHeroMarquee";
+import { AboutHeroBubbleBackground } from "@/components/AboutHeroBubbleBackground";
+import { AboutHeroFlipCard } from "@/components/AboutHeroFlipCard";
 import { TextReveal } from "@/components/TextReveal";
 import type { Metadata } from "next";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
@@ -31,7 +32,7 @@ const MISSION_VISION = [
   {
     icon: Target,
     title: "Our Mission",
-    text: "To deliver precision-driven implant education that equips clinicians with the skills, protocols, and confidence to achieve repeatable outcomes in placement and restoration.",
+    text: "To deliver precision-driven implant education that equips delegates with the skills, protocols, and confidence to achieve repeatable outcomes in placement and restoration.",
   },
   {
     icon: Eye,
@@ -44,7 +45,7 @@ const FEATURES = [
   {
     icon: GraduationCap,
     title: "Expert Faculty",
-    description: "Learn from clinicians and educators with years of hands-on experience and a focus on structured, repeatable protocols.",
+    description: "Learn from delegates and educators with years of hands-on experience and a focus on structured, repeatable protocols.",
   },
   {
     icon: Microscope,
@@ -89,16 +90,8 @@ export default async function AboutPage() {
         className="relative min-h-[70vh] overflow-hidden px-4 py-20 md:py-28 lg:py-36"
         aria-labelledby="about-hero-heading"
       >
-        <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
-          <Image
-            src="/images/about-hero-bg.jpg"
-            alt=""
-            fill
-            className="object-cover object-center"
-            priority
-            sizes="100vw"
-            aria-hidden
-          />
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <AboutHeroBubbleBackground interactive={false} />
         </div>
         <div className="relative z-10 mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div>
@@ -106,21 +99,13 @@ export default async function AboutPage() {
               id="about-hero-heading"
               className="font-[var(--font-playfair)] text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl"
             >
-              <span className="block">
-                <TextReveal>Elevating</TextReveal>
-              </span>
-              <span className="block font-normal italic text-accentGold">
-                <TextReveal>Dentistry</TextReveal>
-              </span>
-              <span className="block">
-                <TextReveal>Through</TextReveal>
-              </span>
-              <span className="text-accentGold">
-                <TextReveal>Excellence</TextReveal>
-              </span>
+              <span className="block">Elevating</span>
+              <span className="block font-normal italic text-accentGold">Dentistry</span>
+              <span className="block">Through</span>
+              <span className="text-accentGold">Excellence</span>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-relaxed text-white/70 md:text-base">
-              Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
+              Kaleidoscope Dental Academy exists for delegates who demand more: more clarity, more control, and more repeatable outcomes in implant dentistry.
             </p>
             <div className="mt-8">
               <Link
@@ -132,7 +117,7 @@ export default async function AboutPage() {
               </Link>
             </div>
           </div>
-          <AboutHeroMarquee />
+          <AboutHeroFlipCard />
         </div>
       </section>
 
@@ -222,7 +207,7 @@ export default async function AboutPage() {
             <TextReveal>Why the Academy</TextReveal>
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/70 md:text-base">
-            Structured education designed for clinicians who want to grow their implant practice with confidence.
+            Structured education designed for delegates who want to grow their implant practice with confidence.
           </p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, description }) => (
@@ -341,7 +326,7 @@ export default async function AboutPage() {
             <TextReveal>Ready to master your craft?</TextReveal>
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-white/70 md:text-base">
-            Join clinicians who have elevated their implant practice through structured education, hands-on training, and ongoing support from the Academy.
+            Join delegates who have elevated their implant practice through structured education, hands-on training, and ongoing support from the Academy.
           </p>
           <div className="mt-8 flex justify-center">
             <Link

@@ -68,6 +68,7 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
             courses.map((course) => {
               const isExpanded = expandedCard === course.slug;
               const isEnrolled = user && enrolledCourseIds.includes(course.id);
+              const hasLayoutImage = Boolean(course.layoutImageUrl?.trim());
               return (
                 <article
                   key={course.slug}
@@ -77,7 +78,14 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                       : "border-white/5 bg-gradient-to-r from-white/[0.03] to-black/90 shadow-[0_18px_60px_rgba(0,0,0,0.85)]"
                   }`}
                 >
-                  <div className="p-6">
+                  <div
+                    className={
+                      hasLayoutImage
+                        ? "flex flex-col md:flex-row"
+                        : ""
+                    }
+                  >
+                    <div className="p-6 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       {course.cpd && (
                         <span className="inline-block rounded-full border border-accentGold/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-accentGold">
@@ -169,6 +177,20 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                         →
                       </span>
                     </button>
+                    </div>
+                    {hasLayoutImage && course.layoutImageUrl && (
+                      <div
+                        className="relative w-full md:w-[42%] min-h-[200px] md:min-h-[220px] flex-shrink-0 bg-black/40"
+                        aria-hidden
+                      >
+                        <img
+                          src={course.layoutImageUrl}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/90" />
+                      </div>
+                    )}
                   </div>
                 </article>
               );

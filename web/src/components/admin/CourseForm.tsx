@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, X, Trash2 } from "lucide-react";
+import { Plus, X, Trash2, Upload } from "lucide-react";
 import type { CourseFormData } from "@/lib/validations/course";
 import type { Course } from "@/types/course";
 import { getCourses } from "@/lib/actions/course";
 import { getInstructors } from "@/lib/actions/instructor";
 import type { Instructor } from "@/types/instructor";
+import { uploadCourseLayoutImage } from "@/lib/actions/upload";
 
 interface CourseFormProps {
   course?: Course | null;
@@ -25,6 +26,11 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
   const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const layoutImageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLayoutImage, setUploadingLayoutImage] = useState(false);
+  const [layoutImagePreview, setLayoutImagePreview] = useState<string | null>(
+    course?.layoutImageUrl || null
+  );
 
   const [form, setForm] = useState<Partial<CourseFormData>>({
     title: course?.title || "",
@@ -50,6 +56,7 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     },
     packageIncludes: course?.packageIncludes || [],
     relatedCourseSlugs: course?.relatedCourseSlugs || [],
+    layoutImageUrl: course?.layoutImageUrl || "",
   });
 
   // Parse dateRange to extract start and end dates
@@ -102,6 +109,40 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     if (fieldErrors[field]) {
       setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  }
+
+  async function handleLayoutImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError("Image size must be less than 2MB");
+      return;
+    }
+    setUploadingLayoutImage(true);
+    setError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => setLayoutImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+    const result = await uploadCourseLayoutImage(file);
+    if (result.success) {
+      updateField("layoutImageUrl", result.url);
+    } else {
+      setError(result.error || "Failed to upload image");
+      setLayoutImagePreview(form.layoutImageUrl || null);
+    }
+    setUploadingLayoutImage(false);
+    if (layoutImageInputRef.current) layoutImageInputRef.current.value = "";
+  }
+
+  function handleRemoveLayoutImage() {
+    setLayoutImagePreview(null);
+    updateField("layoutImageUrl", "");
+    if (layoutImageInputRef.current) layoutImageInputRef.current.value = "";
   }
 
   function addArrayItem(field: "overview" | "learningPoints" | "packageIncludes" | "requirements") {
@@ -369,6 +410,53 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
         </div>
       </section>
 
+      {/* Layout / Thumbnail Image (course card) */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
+          Card layout image
+        </h2>
+        <p className="text-xs text-white/60">
+          Optional thumbnail shown on the courses listing. Displayed with a left-to-right gradient (transparent on the left).
+        </p>
+        <div className="space-y-3">
+          {layoutImagePreview && (
+            <div className="relative inline-block">
+              <img
+                src={layoutImagePreview}
+                alt="Layout preview"
+                className="h-24 w-auto rounded-lg border border-white/10 object-cover"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveLayoutImage}
+                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
+                aria-label="Remove layout image"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          <input
+            ref={layoutImageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleLayoutImageUpload}
+            disabled={uploadingLayoutImage}
+            className="hidden"
+            id="course-layout-image"
+          />
+          <label
+            htmlFor="course-layout-image"
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-4 py-2 text-sm text-white transition hover:bg-white/10 ${
+              uploadingLayoutImage ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <Upload className="h-4 w-4" />
+            {uploadingLayoutImage ? "Uploading..." : layoutImagePreview ? "Change image" : "Upload image"}
+          </label>
+        </div>
+      </section>
+
       {/* Dates & Location */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
@@ -459,7 +547,7 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
           </div>
           <div>
             <label htmlFor="maxParticipants" className="mb-1 block text-xs text-white/70">
-              Max Participants
+              Max Delegates
             </label>
             <input
               id="maxParticipants"

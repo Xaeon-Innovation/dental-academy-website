@@ -31,6 +31,10 @@ export default async function Footer() {
   const settings = await getSettings();
   const contactEmail = settings.contactEmail?.trim() || DEFAULT_EMAIL;
   const contactPhone = settings.contactPhone?.trim();
+  const showBlogInNav = settings.showBlogInNav !== false;
+  const linksToShow = showBlogInNav
+    ? footerLinks
+    : footerLinks.filter((link) => link.href !== "/blog");
   const socialLinksToShow = SOCIAL_CONFIG.filter(({ key }) => {
     const url = settings.socialLinks?.[key]?.trim();
     return url && url !== "";
@@ -72,7 +76,7 @@ export default async function Footer() {
               Quick links
             </h3>
             <ul className="mt-4 space-y-2.5">
-              {footerLinks.map(({ href, label }) => (
+              {linksToShow.map(({ href, label }) => (
                 <li key={href}>
                   <Link
                     href={href}

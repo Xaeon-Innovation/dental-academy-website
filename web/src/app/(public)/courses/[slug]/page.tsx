@@ -88,7 +88,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     {detail.maxParticipants && (
                       <span className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-accentGold/80" aria-hidden />
-                        Max {detail.maxParticipants} participants
+                        Max {detail.maxParticipants} delegates
                       </span>
                     )}
                   </div>

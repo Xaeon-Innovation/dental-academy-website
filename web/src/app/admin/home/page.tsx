@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Upload, X, Star, Trash2 } from "lucide-react";
-import type { HomeSettings } from "@/types/settings";
+import { Upload, X, Star, Trash2, Pencil, Eye, EyeOff } from "lucide-react";
+import type { HomeSettings, VideoTestimonialItem } from "@/types/settings";
 import type { Testimonial } from "@/types/testimonial";
 import type { Course } from "@/types/course";
 import { getHomeSettings, updateHomeSettings } from "@/lib/actions/settings";
-import { uploadHomeImage } from "@/lib/actions/upload";
+import { uploadHomeImage, uploadVideoTestimonial, uploadVideoTestimonialPoster } from "@/lib/actions/upload";
 import {
   getAllTestimonials,
   updateTestimonialStatus,
@@ -16,7 +16,7 @@ import {
 import { getCourses } from "@/lib/actions/course";
 
 type Status = "idle" | "loading" | "saving";
-type TabId = "content" | "testimonials";
+type TabId = "content" | "testimonials" | "videoTestimonials";
 type TestimonialsSubTabId = "review" | "add";
 
 export default function AdminHomeManagementPage() {
@@ -51,6 +51,23 @@ export default function AdminHomeManagementPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [testimonialsSubTab, setTestimonialsSubTab] = useState<TestimonialsSubTabId>("review");
 
+  const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>([]);
+  const [videoName, setVideoName] = useState("");
+  const [videoCredentials, setVideoCredentials] = useState("");
+  const [videoQuote, setVideoQuote] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoDeletingId, setVideoDeletingId] = useState<string | null>(null);
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [editVideoName, setEditVideoName] = useState("");
+  const [editVideoCredentials, setEditVideoCredentials] = useState("");
+  const [editVideoQuote, setEditVideoQuote] = useState("");
+  const [editVideoFile, setEditVideoFile] = useState<File | null>(null);
+  const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
+  const [videoSavingId, setVideoSavingId] = useState<string | null>(null);
+  const [videoTogglingId, setVideoTogglingId] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -67,10 +84,12 @@ export default function AdminHomeManagementPage() {
           ctaTitle: settings?.ctaTitle ?? "",
           ctaBody: settings?.ctaBody ?? "",
           ctaBackgroundImageUrl: settings?.ctaBackgroundImageUrl ?? "",
+          videoTestimonials: settings?.videoTestimonials ?? [],
         };
         setHome(next);
         setPhilosophyImagePreview(next.philosophyImageUrl || null);
         setCtaImagePreview(next.ctaBackgroundImageUrl || null);
+        setVideoTestimonials(next.videoTestimonials ?? []);
         setStatus("idle");
       } catch (err) {
         console.error("Failed to load home settings", err);
@@ -173,7 +192,7 @@ export default function AdminHomeManagementPage() {
         "Precision-driven implant dentistry, from placement to perfection.",
       philosophyBody:
         home.philosophyBody?.trim() ||
-        "Kaleidoscope Dental Academy exists for clinicians who demand more: more clarity, more control, and more repeatable outcomes.",
+        "Kaleidoscope Dental Academy exists for Delegates who demand more: more clarity, more control, and more repeatable outcomes.",
       philosophyImageUrl: home.philosophyImageUrl?.trim() || "",
       ctaTitle: home.ctaTitle?.trim() || "Start your journey",
       ctaBody:
@@ -260,6 +279,161 @@ export default function AdminHomeManagementPage() {
     }
   }
 
+  async function handleAddVideoTestimonial(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!videoFile) {
+      setError("Please select a video file (MP4 or WebM).");
+      return;
+    }
+    if (!videoName.trim()) {
+      setError("Please enter the person's name.");
+      return;
+    }
+    setVideoUploading(true);
+    try {
+      const videoResult = await uploadVideoTestimonial(videoFile);
+      if (!videoResult.success) {
+        setError(videoResult.error);
+        return;
+      }
+      let posterUrl: string | undefined;
+      if (posterFile) {
+        const posterResult = await uploadVideoTestimonialPoster(posterFile);
+        if (posterResult.success) posterUrl = posterResult.url;
+      }
+      const newItem: VideoTestimonialItem = {
+        id: `vt-${Date.now()}`,
+        name: videoName.trim(),
+        credentials: videoCredentials.trim() || undefined,
+        quote: videoQuote.trim() || undefined,
+        videoUrl: videoResult.url,
+        posterUrl,
+        showOnHome: true,
+      };
+      const nextList = [...videoTestimonials, newItem];
+      const result = await updateHomeSettings({ videoTestimonials: nextList });
+      if (result.success) {
+        setVideoTestimonials(nextList);
+        setVideoName("");
+        setVideoCredentials("");
+        setVideoQuote("");
+        setVideoFile(null);
+        setPosterFile(null);
+        setSuccess("Video testimonial added. It will appear on the home page.");
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setVideoUploading(false);
+    }
+  }
+
+  function handleStartEditVideo(v: VideoTestimonialItem) {
+    setEditingVideoId(v.id);
+    setEditVideoName(v.name);
+    setEditVideoCredentials(v.credentials ?? "");
+    setEditVideoQuote(v.quote ?? "");
+    setEditVideoFile(null);
+    setEditPosterFile(null);
+  }
+
+  function handleCancelEditVideo() {
+    setEditingVideoId(null);
+    setEditVideoName("");
+    setEditVideoCredentials("");
+    setEditVideoQuote("");
+    setEditVideoFile(null);
+    setEditPosterFile(null);
+  }
+
+  async function handleSaveEditVideoTestimonial(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingVideoId) return;
+    const item = videoTestimonials.find((v) => v.id === editingVideoId);
+    if (!item) return;
+    setError(null);
+    setSuccess(null);
+    setVideoSavingId(editingVideoId);
+    try {
+      let videoUrl = item.videoUrl;
+      if (editVideoFile) {
+        const res = await uploadVideoTestimonial(editVideoFile);
+        if (!res.success) {
+          setError(res.error);
+          return;
+        }
+        videoUrl = res.url;
+      }
+      let posterUrl: string | undefined = item.posterUrl;
+      if (editPosterFile) {
+        const res = await uploadVideoTestimonialPoster(editPosterFile);
+        if (res.success) posterUrl = res.url;
+      }
+      const updated: VideoTestimonialItem = {
+        ...item,
+        name: editVideoName.trim(),
+        credentials: editVideoCredentials.trim() || undefined,
+        quote: editVideoQuote.trim() || undefined,
+        videoUrl,
+        posterUrl,
+        showOnHome: item.showOnHome !== false,
+      };
+      const nextList = videoTestimonials.map((v) =>
+        v.id === editingVideoId ? updated : v
+      );
+      const result = await updateHomeSettings({ videoTestimonials: nextList });
+      if (result.success) {
+        setVideoTestimonials(nextList);
+        handleCancelEditVideo();
+        setSuccess("Video testimonial updated.");
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setVideoSavingId(null);
+    }
+  }
+
+  async function handleToggleShowOnHome(id: string) {
+    const item = videoTestimonials.find((v) => v.id === id);
+    if (!item) return;
+    setError(null);
+    setVideoTogglingId(id);
+    const nextList = videoTestimonials.map((v) =>
+      v.id === id ? { ...v, showOnHome: !(v.showOnHome !== false) } : v
+    );
+    const result = await updateHomeSettings({ videoTestimonials: nextList });
+    setVideoTogglingId(null);
+    if (result.success) {
+      setVideoTestimonials(nextList);
+      setSuccess(
+        nextList.find((x) => x.id === id)?.showOnHome !== false
+          ? "Video will now show on the home page."
+          : "Video hidden from the home page."
+      );
+    } else {
+      setError(result.error);
+    }
+  }
+
+  async function handleDeleteVideoTestimonial(id: string) {
+    if (!confirm("Delete this video testimonial? It will be removed from the list and the home page.")) return;
+    setError(null);
+    setVideoDeletingId(id);
+    const nextList = videoTestimonials.filter((v) => v.id !== id);
+    const result = await updateHomeSettings({ videoTestimonials: nextList });
+    setVideoDeletingId(null);
+    if (result.success) {
+      setVideoTestimonials(nextList);
+      if (editingVideoId === id) handleCancelEditVideo();
+      setSuccess("Video testimonial deleted from the home page.");
+    } else {
+      setError(result.error);
+    }
+  }
+
   const loading = status === "loading";
   const saving = status === "saving";
 
@@ -268,7 +442,7 @@ export default function AdminHomeManagementPage() {
       <div>
         <h1 className="font-[var(--font-playfair)] text-2xl tracking-tight">Home management</h1>
         <p className="mt-2 text-sm text-white/70">
-          Edit the text and images for the home page, and manage which testimonials appear in the marquee.
+          Edit the text and images for the home page, manage testimonials, and upload video testimonials.
         </p>
         <div className="mt-4 flex gap-2 border-b border-white/10">
           <button
@@ -292,6 +466,17 @@ export default function AdminHomeManagementPage() {
             }`}
           >
             Testimonials
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("videoTestimonials")}
+            className={`rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === "videoTestimonials"
+                ? "bg-white/10 text-accentGold"
+                : "text-white/60 hover:bg-white/5 hover:text-white/80"
+            }`}
+          >
+            Video testimonials
           </button>
         </div>
       </div>
@@ -360,7 +545,7 @@ export default function AdminHomeManagementPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-white">
-                          {t.displayName?.trim() || "Student"}
+                          {t.displayName?.trim() || "Delegate"}
                         </span>
                         <span className="flex items-center gap-0.5 text-accentGold">
                           {Array.from({ length: 5 }).map((_, i) => (
@@ -438,7 +623,7 @@ export default function AdminHomeManagementPage() {
                 Add testimonial (e.g. previous courses)
               </h3>
               <p className="mt-1 text-[11px] text-white/50">
-                For past students not in the system. Enter course, name and review.
+                For past delegates not in the system. Enter course, name and review.
               </p>
               <form onSubmit={handleAddTestimonial} className="mt-4 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -508,7 +693,7 @@ export default function AdminHomeManagementPage() {
                     value={addQuote}
                     onChange={(e) => setAddQuote(e.target.value)}
                     required
-                    placeholder="Short paragraph from the student..."
+                    placeholder="Short paragraph from the delegate..."
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
                     disabled={addSaving}
                   />
@@ -523,6 +708,280 @@ export default function AdminHomeManagementPage() {
               </form>
             </div>
           )}
+        </section>
+      )}
+
+      {activeTab === "videoTestimonials" && (
+        <section className="rounded-lg border border-white/10 bg-black/40 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
+            Video testimonials
+          </h2>
+          <p className="mt-1 text-xs text-white/60">
+            Add as many videos as you need. Use the list below to control which appear on the home page, or edit and delete entries.
+          </p>
+
+          {videoTestimonials.length > 0 && (
+            <ul className="mt-6 space-y-3">
+              {videoTestimonials.map((v) => (
+                <li
+                  key={v.id}
+                  className="rounded-lg border border-white/10 bg-black/20 overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-white">{v.name}</p>
+                        <span
+                          className={`rounded px-2 py-0.5 text-[10px] font-medium ${
+                            v.showOnHome !== false
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : "bg-white/10 text-white/50"
+                          }`}
+                        >
+                          {v.showOnHome !== false ? "Shown on home" : "Hidden"}
+                        </span>
+                      </div>
+                      {v.credentials && (
+                        <p className="text-xs text-accentGold/90">{v.credentials}</p>
+                      )}
+                      {v.quote && (
+                        <p className="mt-1 line-clamp-2 text-xs text-white/60">{v.quote}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleShowOnHome(v.id)}
+                        disabled={videoTogglingId === v.id || videoDeletingId === v.id}
+                        title={v.showOnHome !== false ? "Hide from home page" : "Show on home page"}
+                        className="rounded border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 disabled:opacity-50 inline-flex items-center gap-1.5"
+                        aria-label={v.showOnHome !== false ? "Hide from home page" : "Show on home page"}
+                      >
+                        {v.showOnHome !== false ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        )}
+                        {videoTogglingId === v.id ? "…" : v.showOnHome !== false ? "Hide" : "Show"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditVideo(v)}
+                        disabled={videoDeletingId === v.id || !!editingVideoId}
+                        className="rounded border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 disabled:opacity-50 inline-flex items-center gap-1.5"
+                        aria-label="Edit video testimonial"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVideoTestimonial(v.id)}
+                        disabled={videoDeletingId === v.id}
+                        className="rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20 disabled:opacity-50 inline-flex items-center gap-1.5"
+                        aria-label="Delete video testimonial"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {videoDeletingId === v.id ? "…" : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                  {editingVideoId === v.id && (
+                    <form
+                      onSubmit={handleSaveEditVideoTestimonial}
+                      className="border-t border-white/10 bg-black/30 p-4 space-y-3"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-accentGold/90">
+                        Edit video testimonial
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label htmlFor="edit-video-name" className="mb-1 block text-[11px] font-medium text-white/70">
+                            Name *
+                          </label>
+                          <input
+                            id="edit-video-name"
+                            type="text"
+                            value={editVideoName}
+                            onChange={(e) => setEditVideoName(e.target.value)}
+                            required
+                            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-accentGold/50 focus:outline-none"
+                            disabled={!!videoSavingId}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="edit-video-credentials" className="mb-1 block text-[11px] font-medium text-white/70">
+                            Credentials (optional)
+                          </label>
+                          <input
+                            id="edit-video-credentials"
+                            type="text"
+                            value={editVideoCredentials}
+                            onChange={(e) => setEditVideoCredentials(e.target.value)}
+                            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-accentGold/50 focus:outline-none"
+                            disabled={!!videoSavingId}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="edit-video-quote" className="mb-1 block text-[11px] font-medium text-white/70">
+                          Short quote (optional)
+                        </label>
+                        <textarea
+                          id="edit-video-quote"
+                          rows={2}
+                          value={editVideoQuote}
+                          onChange={(e) => setEditVideoQuote(e.target.value)}
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-accentGold/50 focus:outline-none"
+                          disabled={!!videoSavingId}
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-medium text-white/70">
+                            Replace video (optional)
+                          </label>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm"
+                            onChange={(e) => setEditVideoFile(e.target.files?.[0] ?? null)}
+                            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
+                            disabled={!!videoSavingId}
+                          />
+                          {editVideoFile && (
+                            <p className="mt-1 text-[11px] text-white/50">{editVideoFile.name}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[11px] font-medium text-white/70">
+                            Replace poster (optional)
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setEditPosterFile(e.target.files?.[0] ?? null)}
+                            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
+                            disabled={!!videoSavingId}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          disabled={!!videoSavingId || !editVideoName.trim()}
+                          className="rounded-lg bg-accentGold px-4 py-2 text-sm font-semibold text-background transition hover:bg-accentGold/90 disabled:opacity-60"
+                        >
+                          {videoSavingId === v.id ? "Saving…" : "Save changes"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditVideo}
+                          disabled={!!videoSavingId}
+                          className="rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-6 rounded-lg border border-white/10 bg-black/20 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+              Add video testimonial
+            </h3>
+            <p className="mt-1 text-[11px] text-white/50">
+              Upload a video (MP4 or WebM). Optional: poster image for the card thumbnail.
+            </p>
+            <form onSubmit={handleAddVideoTestimonial} className="mt-4 space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="video-name" className="mb-1 block text-[11px] font-medium text-white/70">
+                    Name *
+                  </label>
+                  <input
+                    id="video-name"
+                    type="text"
+                    value={videoName}
+                    onChange={(e) => setVideoName(e.target.value)}
+                    required
+                    placeholder="Dr. Jane Smith"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                    disabled={videoUploading}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="video-credentials" className="mb-1 block text-[11px] font-medium text-white/70">
+                    Credentials (optional)
+                  </label>
+                  <input
+                    id="video-credentials"
+                    type="text"
+                    value={videoCredentials}
+                    onChange={(e) => setVideoCredentials(e.target.value)}
+                    placeholder="BDS, MClinDent"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                    disabled={videoUploading}
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="video-quote" className="mb-1 block text-[11px] font-medium text-white/70">
+                  Short quote (optional)
+                </label>
+                <textarea
+                  id="video-quote"
+                  rows={2}
+                  value={videoQuote}
+                  onChange={(e) => setVideoQuote(e.target.value)}
+                  placeholder="One line shown on the card..."
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                  disabled={videoUploading}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-white/70">
+                    Video file (MP4 or WebM) *
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
+                    disabled={videoUploading}
+                  />
+                  {videoFile && (
+                    <p className="mt-1 text-[11px] text-white/50">
+                      {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-white/70">
+                    Poster image (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPosterFile(e.target.files?.[0] ?? null)}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
+                    disabled={videoUploading}
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={videoUploading || !videoFile || !videoName.trim()}
+                className="rounded-lg bg-accentGold px-4 py-2 text-sm font-semibold text-background transition hover:bg-accentGold/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {videoUploading ? "Uploading…" : "Add video testimonial"}
+              </button>
+            </form>
+          </div>
         </section>
       )}
 
@@ -595,7 +1054,7 @@ export default function AdminHomeManagementPage() {
                   value={home.philosophyBody ?? ""}
                   onChange={(e) => updateField("philosophyBody", e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-                  placeholder="Kaleidoscope Dental Academy exists for clinicians who demand more..."
+                  placeholder="Kaleidoscope Dental Academy exists for Delegates who demand more..."
                   disabled={loading || saving}
                 />
               </div>

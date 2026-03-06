@@ -87,7 +87,7 @@ export default function RegistrationDetailsDialog({
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-[var(--font-playfair)] text-xl font-semibold text-white">
-            {type === "student" ? "Student Details" : "Enrollment Details"}
+            {type === "student" ? "Delegate Details" : "Enrollment Details"}
           </h2>
           <button
             onClick={onClose}
@@ -133,7 +133,7 @@ export default function RegistrationDetailsDialog({
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Student Name</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Delegate Name</label>
                 <p className="mt-1 text-white">{registration.name}</p>
               </div>
               <div>

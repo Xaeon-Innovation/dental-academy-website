@@ -12,4 +12,5 @@ export const COLLECTIONS = {
   instructors: "instructors",
   students: "students",
   testimonials: "testimonials",
+  cases: "cases",
 } as const;

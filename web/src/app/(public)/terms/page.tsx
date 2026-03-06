@@ -58,10 +58,10 @@ export default function TermsPage() {
 
           <section>
             <h2 className="mb-4 text-lg font-semibold text-white">
-              Participant Responsibilities
+              Delegate Responsibilities
             </h2>
             <p>
-              Participants are required to comply with all applicable local
+              Delegates are required to comply with all applicable local
               regulations and professional codes of conduct during the training.
               Where a course involves travel, you are responsible for ensuring
               your passport, visa, and travel documents are valid and meet the

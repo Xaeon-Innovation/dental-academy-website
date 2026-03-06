@@ -13,11 +13,17 @@ gsap.registerPlugin(ScrollTrigger);
 
 export interface TextRevealProps extends ComponentPropsWithoutRef<"span"> {
   children: string;
+  /** Duration in seconds for each word reveal. Default 0.12. */
+  wordDuration?: number;
+  /** Timeline span (0–1) over which words are staggered. Higher = slower overall. Default 0.85. */
+  timelineSpan?: number;
 }
 
 export const TextReveal: FC<TextRevealProps> = ({
   children,
   className,
+  wordDuration = 0.12,
+  timelineSpan = 0.85,
   ...props
 }) => {
   const targetRef = useRef<HTMLSpanElement>(null);
@@ -35,7 +41,7 @@ export const TextReveal: FC<TextRevealProps> = ({
     const wordSpans = el.querySelectorAll<HTMLSpanElement>(".text-reveal-word");
     if (wordSpans.length === 0) return;
 
-    const stagger = Math.min(0.12, 1 / wordSpans.length);
+    const stagger = Math.min(wordDuration, 1 / wordSpans.length);
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: el,
@@ -45,7 +51,7 @@ export const TextReveal: FC<TextRevealProps> = ({
     });
 
     wordSpans.forEach((span, i) => {
-      const start = (i / wordSpans.length) * 0.85;
+      const start = (i / wordSpans.length) * timelineSpan;
       tl.fromTo(
         span,
         { opacity: 0, y: 14 },
@@ -59,7 +65,7 @@ export const TextReveal: FC<TextRevealProps> = ({
         if (t.trigger === el) t.kill();
       });
     };
-  }, [children]);
+  }, [children, wordDuration, timelineSpan]);
 
   return (
     <span ref={targetRef} className={className ?? ""} {...props}>

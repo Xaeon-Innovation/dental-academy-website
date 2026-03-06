@@ -69,7 +69,7 @@ export default function PortalDashboardPage() {
         <div className="mx-auto max-w-3xl">
           <header className="mb-10">
             <h1 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-              Student dashboard
+              Delegate dashboard
             </h1>
             <p className="mt-2 text-sm text-white/70">
               Your enrolled courses, profile, and saved enrollment info.

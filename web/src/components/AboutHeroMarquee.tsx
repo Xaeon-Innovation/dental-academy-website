@@ -33,7 +33,7 @@ const MARQUEE_IMAGES = [
 export function AboutHeroMarquee() {
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/5 bg-gray-950/5 shadow-2xl ring-1 ring-neutral-700/10 lg:aspect-[5/4] dark:bg-neutral-800">
-      <ThreeDMarquee images={MARQUEE_IMAGES} className="h-full w-full rounded-2xl p-2" />
+      <ThreeDMarquee images={MARQUEE_IMAGES} className="h-full w-full rounded-2xl p-2" durationMultiplier={2} />
     </div>
   );
 }
