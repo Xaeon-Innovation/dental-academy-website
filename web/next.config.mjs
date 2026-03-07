@@ -6,12 +6,10 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   // Disable source maps to reduce build memory usage (avoids OOM on default Vercel build machine)
   productionBrowserSourceMaps: false,
+  enablePrerenderSourceMaps: false,
   experimental: {
     serverActions: { bodySizeLimit: "100mb" },
-    serverSourceMaps: false,
     webpackMemoryOptimizations: true,
-    // Reduce memory during static page generation
-    enablePrerenderSourceMaps: false,
   },
   images: {
     remotePatterns: [
