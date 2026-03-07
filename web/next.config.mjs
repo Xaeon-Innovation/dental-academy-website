@@ -4,6 +4,7 @@ const nextConfig = {
   serverExternalPackages: ["firebase-admin"],
   // Skip TypeScript check during build to save memory and time; run `npm run typecheck` in CI or pre-push
   typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   // Disable source maps to reduce build memory usage (avoids OOM on default Vercel build machine)
   productionBrowserSourceMaps: false,
   enablePrerenderSourceMaps: false,
