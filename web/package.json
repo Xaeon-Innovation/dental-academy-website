@@ -10,6 +10,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "postinstall": "node scripts/prune-swc.js || exit 0",
     "prepare": "husky"
   },
   "dependencies": {
