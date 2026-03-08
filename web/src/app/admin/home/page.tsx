@@ -26,7 +26,8 @@ async function uploadVideoViaApi(file: File): Promise<{ success: true; url: stri
   const res = await fetch("/api/upload/video-testimonial", { method: "POST", body: formData });
   const data = await res.json().catch(() => ({}));
   if (res.ok && data.success && typeof data.url === "string") return { success: true, url: data.url };
-  return { success: false, error: data.error ?? "Upload failed" };
+  const message = typeof data.error === "string" ? data.error : data.message ?? `Upload failed (${res.status})`;
+  return { success: false, error: message };
 }
 
 export default function AdminHomeManagementPage() {

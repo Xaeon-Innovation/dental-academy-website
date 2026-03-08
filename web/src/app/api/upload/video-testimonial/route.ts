@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const url = `/videos/video-testimonials/${fullFileName}`;
     return NextResponse.json({ success: true, url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = (err instanceof Error ? err.message : String(err)) || "Blob upload failed";
     console.error("Video testimonial upload error:", err);
     return NextResponse.json(
       { success: false, error: message },
