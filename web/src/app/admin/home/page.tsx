@@ -6,7 +6,7 @@ import type { HomeSettings, VideoTestimonialItem } from "@/types/settings";
 import type { Testimonial } from "@/types/testimonial";
 import type { Course } from "@/types/course";
 import { getHomeSettings, updateHomeSettings } from "@/lib/actions/settings";
-import { uploadHomeImage, uploadVideoTestimonial, uploadVideoTestimonialPoster } from "@/lib/actions/upload";
+import { uploadHomeImage, uploadVideoTestimonialPoster } from "@/lib/actions/upload";
 import {
   getAllTestimonials,
   updateTestimonialStatus,
@@ -18,6 +18,16 @@ import { getCourses } from "@/lib/actions/course";
 type Status = "idle" | "loading" | "saving";
 type TabId = "content" | "testimonials" | "videoTestimonials";
 type TestimonialsSubTabId = "review" | "add";
+
+/** Upload video via API route to avoid server-action serialization issues with large files. */
+async function uploadVideoViaApi(file: File): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/upload/video-testimonial", { method: "POST", body: formData });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data.success && typeof data.url === "string") return { success: true, url: data.url };
+  return { success: false, error: data.error ?? "Upload failed" };
+}
 
 export default function AdminHomeManagementPage() {
   const [activeTab, setActiveTab] = useState<TabId>("content");
@@ -293,7 +303,7 @@ export default function AdminHomeManagementPage() {
     }
     setVideoUploading(true);
     try {
-      const videoResult = await uploadVideoTestimonial(videoFile);
+      const videoResult = await uploadVideoViaApi(videoFile);
       if (!videoResult.success) {
         setError(videoResult.error);
         return;
@@ -361,7 +371,7 @@ export default function AdminHomeManagementPage() {
     try {
       let videoUrl = item.videoUrl;
       if (editVideoFile) {
-        const res = await uploadVideoTestimonial(editVideoFile);
+        const res = await uploadVideoViaApi(editVideoFile);
         if (!res.success) {
           setError(res.error);
           return;
