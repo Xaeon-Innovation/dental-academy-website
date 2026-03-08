@@ -14,20 +14,24 @@ import {
   createTestimonialAsAdmin,
 } from "@/lib/actions/testimonial";
 import { getCourses } from "@/lib/actions/course";
+import { upload } from "@vercel/blob/client";
 
 type Status = "idle" | "loading" | "saving";
 type TabId = "content" | "testimonials" | "videoTestimonials";
 type TestimonialsSubTabId = "review" | "add";
 
-/** Upload video via API route to avoid server-action serialization issues with large files. */
-async function uploadVideoViaApi(file: File): Promise<{ success: true; url: string } | { success: false; error: string }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch("/api/upload/video-testimonial", { method: "POST", body: formData });
-  const data = await res.json().catch(() => ({}));
-  if (res.ok && data.success && typeof data.url === "string") return { success: true, url: data.url };
-  const message = typeof data.error === "string" ? data.error : data.message ?? `Upload failed (${res.status})`;
-  return { success: false, error: message };
+/** Upload video via Vercel Blob client upload (file goes browser → Blob, avoids 4.5MB server limit). */
+async function uploadVideoToBlob(file: File): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  try {
+    const blob = await upload(file.name, file, {
+      access: "public",
+      handleUploadUrl: "/api/upload/video-testimonial",
+    });
+    return { success: true, url: blob.url };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: message };
+  }
 }
 
 export default function AdminHomeManagementPage() {
@@ -304,7 +308,7 @@ export default function AdminHomeManagementPage() {
     }
     setVideoUploading(true);
     try {
-      const videoResult = await uploadVideoViaApi(videoFile);
+      const videoResult = await uploadVideoToBlob(videoFile);
       if (!videoResult.success) {
         setError(videoResult.error);
         return;
@@ -372,7 +376,7 @@ export default function AdminHomeManagementPage() {
     try {
       let videoUrl = item.videoUrl;
       if (editVideoFile) {
-        const res = await uploadVideoViaApi(editVideoFile);
+        const res = await uploadVideoToBlob(editVideoFile);
         if (!res.success) {
           setError(res.error);
           return;
