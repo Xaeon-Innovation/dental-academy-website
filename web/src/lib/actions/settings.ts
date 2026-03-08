@@ -10,28 +10,46 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
-import { getAdminApp } from "@/lib/firebase/admin";
+import { getAdminApp, getAdminDb } from "@/lib/firebase/admin";
 import type { SiteSettings, HomeSettings } from "@/types/settings";
 
 const SETTINGS_DOC_ID = "main";
 
 function convertTimestamps(data: any): any {
   if (!data) return data;
-  
+
   const converted = { ...data };
-  
+
   if (converted.createdAt instanceof Timestamp) {
     converted.createdAt = converted.createdAt.toDate().toISOString();
   }
   if (converted.updatedAt instanceof Timestamp) {
     converted.updatedAt = converted.updatedAt.toDate().toISOString();
   }
-  
+  // Admin SDK returns Firestore.Timestamp
+  if (converted.createdAt?.toDate) {
+    converted.createdAt = converted.createdAt.toDate().toISOString();
+  }
+  if (converted.updatedAt?.toDate) {
+    converted.updatedAt = converted.updatedAt.toDate().toISOString();
+  }
+
   return converted;
 }
 
 export async function getSettings(): Promise<SiteSettings> {
   try {
+    const adminDb = getAdminDb();
+    if (adminDb) {
+      const ref = adminDb.collection(COLLECTIONS.settings).doc(SETTINGS_DOC_ID);
+      const docSnap = await ref.get();
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        return convertTimestamps(data) as SiteSettings;
+      }
+      return { adminEmails: [] };
+    }
+
     const docRef = doc(db, COLLECTIONS.settings, SETTINGS_DOC_ID);
     const docSnap = await getDoc(docRef);
 
@@ -40,7 +58,6 @@ export async function getSettings(): Promise<SiteSettings> {
       return convertTimestamps(data) as SiteSettings;
     }
 
-    // Return default settings if document doesn't exist
     return {
       adminEmails: [],
     };
@@ -61,6 +78,26 @@ export async function updateSettings(
   updates: Partial<SiteSettings>
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
+    const adminDb = getAdminDb();
+    if (adminDb) {
+      const { FieldValue } = await import("firebase-admin/firestore");
+      const ref = adminDb.collection(COLLECTIONS.settings).doc(SETTINGS_DOC_ID);
+      const docSnap = await ref.get();
+      const payload = {
+        ...updates,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (docSnap.exists) {
+        await ref.update(payload);
+      } else {
+        await ref.set({
+          ...payload,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+      return { success: true };
+    }
+
     const docRef = doc(db, COLLECTIONS.settings, SETTINGS_DOC_ID);
     const docSnap = await getDoc(docRef);
 
