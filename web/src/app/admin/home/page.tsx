@@ -323,8 +323,10 @@ export default function AdminHomeManagementPage() {
         setPosterFile(null);
         setSuccess("Video testimonial added. It will appear on the home page.");
       } else {
-        setError(result.error);
+        setError(result.error ?? "Failed to save video testimonial.");
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save video testimonial. Please try again.");
     } finally {
       setVideoUploading(false);
     }
@@ -389,8 +391,10 @@ export default function AdminHomeManagementPage() {
         handleCancelEditVideo();
         setSuccess("Video testimonial updated.");
       } else {
-        setError(result.error);
+        setError(result.error ?? "Failed to save changes.");
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save changes. Please try again.");
     } finally {
       setVideoSavingId(null);
     }
@@ -401,20 +405,25 @@ export default function AdminHomeManagementPage() {
     if (!item) return;
     setError(null);
     setVideoTogglingId(id);
-    const nextList = videoTestimonials.map((v) =>
-      v.id === id ? { ...v, showOnHome: !(v.showOnHome !== false) } : v
-    );
-    const result = await updateHomeSettings({ videoTestimonials: nextList });
-    setVideoTogglingId(null);
-    if (result.success) {
-      setVideoTestimonials(nextList);
-      setSuccess(
-        nextList.find((x) => x.id === id)?.showOnHome !== false
-          ? "Video will now show on the home page."
-          : "Video hidden from the home page."
+    try {
+      const nextList = videoTestimonials.map((v) =>
+        v.id === id ? { ...v, showOnHome: !(v.showOnHome !== false) } : v
       );
-    } else {
-      setError(result.error);
+      const result = await updateHomeSettings({ videoTestimonials: nextList });
+      if (result.success) {
+        setVideoTestimonials(nextList);
+        setSuccess(
+          nextList.find((x) => x.id === id)?.showOnHome !== false
+            ? "Video will now show on the home page."
+            : "Video hidden from the home page."
+        );
+      } else {
+        setError(result.error ?? "Failed to update.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update. Please try again.");
+    } finally {
+      setVideoTogglingId(null);
     }
   }
 
@@ -422,15 +431,20 @@ export default function AdminHomeManagementPage() {
     if (!confirm("Delete this video testimonial? It will be removed from the list and the home page.")) return;
     setError(null);
     setVideoDeletingId(id);
-    const nextList = videoTestimonials.filter((v) => v.id !== id);
-    const result = await updateHomeSettings({ videoTestimonials: nextList });
-    setVideoDeletingId(null);
-    if (result.success) {
-      setVideoTestimonials(nextList);
-      if (editingVideoId === id) handleCancelEditVideo();
-      setSuccess("Video testimonial deleted from the home page.");
-    } else {
-      setError(result.error);
+    try {
+      const nextList = videoTestimonials.filter((v) => v.id !== id);
+      const result = await updateHomeSettings({ videoTestimonials: nextList });
+      if (result.success) {
+        setVideoTestimonials(nextList);
+        if (editingVideoId === id) handleCancelEditVideo();
+        setSuccess("Video testimonial deleted from the home page.");
+      } else {
+        setError(result.error ?? "Failed to delete.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete. Please try again.");
+    } finally {
+      setVideoDeletingId(null);
     }
   }
 
@@ -838,30 +852,34 @@ export default function AdminHomeManagementPage() {
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <label className="mb-1 block text-[11px] font-medium text-white/70">
+                          <label htmlFor="edit-video-file" className="mb-1 block text-[11px] font-medium text-white/70">
                             Replace video (optional)
                           </label>
                           <input
+                            id="edit-video-file"
                             type="file"
                             accept="video/mp4,video/webm"
                             onChange={(e) => setEditVideoFile(e.target.files?.[0] ?? null)}
                             className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
                             disabled={!!videoSavingId}
+                            aria-label="Replace video (optional)"
                           />
                           {editVideoFile && (
                             <p className="mt-1 text-[11px] text-white/50">{editVideoFile.name}</p>
                           )}
                         </div>
                         <div>
-                          <label className="mb-1 block text-[11px] font-medium text-white/70">
+                          <label htmlFor="edit-poster-file" className="mb-1 block text-[11px] font-medium text-white/70">
                             Replace poster (optional)
                           </label>
                           <input
+                            id="edit-poster-file"
                             type="file"
                             accept="image/*"
                             onChange={(e) => setEditPosterFile(e.target.files?.[0] ?? null)}
                             className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
                             disabled={!!videoSavingId}
+                            aria-label="Replace poster (optional)"
                           />
                         </div>
                       </div>
@@ -944,15 +962,17 @@ export default function AdminHomeManagementPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-white/70">
+                  <label htmlFor="add-video-file" className="mb-1 block text-[11px] font-medium text-white/70">
                     Video file (MP4 or WebM) *
                   </label>
                   <input
+                    id="add-video-file"
                     type="file"
                     accept="video/mp4,video/webm"
                     onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
                     disabled={videoUploading}
+                    aria-label="Video file (MP4 or WebM)"
                   />
                   {videoFile && (
                     <p className="mt-1 text-[11px] text-white/50">
@@ -961,15 +981,17 @@ export default function AdminHomeManagementPage() {
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-white/70">
+                  <label htmlFor="add-poster-file" className="mb-1 block text-[11px] font-medium text-white/70">
                     Poster image (optional)
                   </label>
                   <input
+                    id="add-poster-file"
                     type="file"
                     accept="image/*"
                     onChange={(e) => setPosterFile(e.target.files?.[0] ?? null)}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-2 file:rounded file:border-0 file:bg-accentGold/20 file:px-3 file:py-1 file:text-xs file:text-accentGold"
                     disabled={videoUploading}
+                    aria-label="Poster image (optional)"
                   />
                 </div>
               </div>
