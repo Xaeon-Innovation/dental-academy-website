@@ -15,6 +15,20 @@ import type { SiteSettings, HomeSettings } from "@/types/settings";
 
 const SETTINGS_DOC_ID = "main";
 
+/** Remove undefined values so Firestore accepts the payload (it does not allow undefined). */
+function stripUndefined<T>(value: T): T {
+  if (value === undefined) return value;
+  if (Array.isArray(value)) return value.map(stripUndefined) as T;
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefined(v)])
+    ) as T;
+  }
+  return value;
+}
+
 function convertTimestamps(data: any): any {
   if (!data) return data;
 
@@ -83,8 +97,9 @@ export async function updateSettings(
       const { FieldValue } = await import("firebase-admin/firestore");
       const ref = adminDb.collection(COLLECTIONS.settings).doc(SETTINGS_DOC_ID);
       const docSnap = await ref.get();
+      const cleanUpdates = stripUndefined(updates) as Partial<SiteSettings>;
       const payload = {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: FieldValue.serverTimestamp(),
       };
       if (docSnap.exists) {
@@ -101,8 +116,9 @@ export async function updateSettings(
     const docRef = doc(db, COLLECTIONS.settings, SETTINGS_DOC_ID);
     const docSnap = await getDoc(docRef);
 
+    const cleanUpdates = stripUndefined(updates) as Partial<SiteSettings>;
     const payload = {
-      ...updates,
+      ...cleanUpdates,
       updatedAt: serverTimestamp(),
     };
 
