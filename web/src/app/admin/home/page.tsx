@@ -386,12 +386,15 @@ export default function AdminHomeManagementPage() {
         v.id === editingVideoId ? updated : v
       );
       const result = await updateHomeSettings({ videoTestimonials: nextList });
-      if (result.success) {
+      if (result && typeof result === "object" && result.success) {
         setVideoTestimonials(nextList);
         handleCancelEditVideo();
         setSuccess("Video testimonial updated.");
       } else {
-        setError(result.error ?? "Failed to save changes.");
+        const msg = result && typeof result === "object" && "error" in result && typeof result.error === "string"
+          ? result.error
+          : "Failed to save changes.";
+        setError(msg);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save changes. Please try again.");

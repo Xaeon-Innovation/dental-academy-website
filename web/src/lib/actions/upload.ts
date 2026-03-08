@@ -203,10 +203,19 @@ async function saveVideoToPublicFolder(
 /**
  * Upload a video testimonial file (MP4 or WebM). Uses Vercel Blob when
  * BLOB_READ_WRITE_TOKEN is set; otherwise saves to public/videos/video-testimonials/ for local dev.
+ * On Vercel, Blob is required (no filesystem); returns a clear error if token is missing.
  */
 export async function uploadVideoTestimonial(file: File): Promise<UploadResult> {
   const invalid = validateVideoFile(file);
   if (invalid) return invalid;
+
+  if (process.env.VERCEL && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return {
+      success: false,
+      error:
+        "Video testimonials require Vercel Blob in production. Add BLOB_READ_WRITE_TOKEN in your Vercel project settings.",
+    };
+  }
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const lastDot = file.name.lastIndexOf(".");
@@ -222,7 +231,7 @@ export async function uploadVideoTestimonial(file: File): Promise<UploadResult> 
       });
       return { success: true, url: blob.url };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to upload video";
+      const message = err instanceof Error ? err.message : String(err);
       console.error("Video testimonial upload error:", err);
       return { success: false, error: message };
     }

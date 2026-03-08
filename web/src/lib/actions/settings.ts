@@ -133,8 +133,9 @@ export async function updateSettings(
 
     return { success: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update settings";
-    return { success: false, error: message };
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("updateSettings error:", err);
+    return { success: false, error: message || "Failed to update settings" };
   }
 }
 
@@ -150,8 +151,9 @@ export async function updateHomeSettings(
     };
     return await updateSettings({ home: nextHome });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to update home settings";
-    return { success: false, error: message };
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("updateHomeSettings error:", err);
+    return { success: false, error: message || "Failed to update home settings" };
   }
 }
 
