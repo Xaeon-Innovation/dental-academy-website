@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Upload, Star, Trash2 } from "lucide-react";
 import type { CaseFormData } from "@/lib/validations/case";
 import type { Case } from "@/types/case";
+import { compressImageFile } from "@/lib/imageCompression";
 
 interface CaseFormProps {
   caseItem?: Case | null;
@@ -60,14 +61,16 @@ export default function CaseForm({ caseItem, onSubmit, onCancel }: CaseFormProps
       }
     }
 
-    // Upload all files using API route (handles large files better)
+    // Upload all files using API route, compressing first
     const uploadPromises = files.map(async (file, index) => {
       const uploadIndex = (form.images?.length || 0) + index;
       setUploadingImages((prev) => new Set(prev).add(uploadIndex));
       
       try {
+        const compressedFile = await compressImageFile(file, { preset: "case" });
+
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressedFile);
 
         const response = await fetch("/api/upload/case-image", {
           method: "POST",

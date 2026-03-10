@@ -7,6 +7,7 @@ import type { InstructorFormData } from "@/lib/validations/instructor";
 import type { Instructor, InstructorPageVisibility } from "@/types/instructor";
 import { INSTRUCTOR_PAGE_KEYS } from "@/types/instructor";
 import { uploadInstructorImage } from "@/lib/actions/upload";
+import { compressImageFile } from "@/lib/imageCompression";
 
 interface InstructorFormProps {
   instructor?: Instructor | null;
@@ -79,38 +80,39 @@ export default function InstructorForm({ instructor, onSubmit }: InstructorFormP
       return;
     }
 
-    // Validate file size (max 2MB)
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError("Image size must be less than 2MB");
-      return;
-    }
-
     setUploading(true);
     setError(null);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress image before upload (profile preset)
+      const compressedFile = await compressImageFile(file, { preset: "instructor" });
 
-    // Upload to public/images/instructors folder
-    const result = await uploadInstructorImage(file);
+      // Create preview from compressed file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
 
-    if (result.success) {
-      updateField("imageUrl", result.url);
-    } else {
-      setError(result.error || "Failed to upload image");
+      // Upload compressed file
+      const result = await uploadInstructorImage(compressedFile);
+
+      if (result.success) {
+        updateField("imageUrl", result.url);
+      } else {
+        setError(result.error || "Failed to upload image");
+        setImagePreview(form.imageUrl || null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to compress or upload image";
+      setError(message);
       setImagePreview(form.imageUrl || null);
-    }
-
-    setUploading(false);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   }
 

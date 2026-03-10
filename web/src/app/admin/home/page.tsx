@@ -7,6 +7,7 @@ import type { Testimonial } from "@/types/testimonial";
 import type { Course } from "@/types/course";
 import { getHomeSettings, updateHomeSettings } from "@/lib/actions/settings";
 import { uploadHomeImage, uploadVideoTestimonialPoster } from "@/lib/actions/upload";
+import { compressImageFile } from "@/lib/imageCompression";
 import {
   getAllTestimonials,
   updateTestimonialStatus,
@@ -242,32 +243,37 @@ export default function AdminHomeManagementPage() {
       setError("Please select a valid image file.");
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image size must be less than 2MB.");
-      return;
-    }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (type === "philosophy") {
-        setPhilosophyImagePreview(reader.result as string);
-      } else {
-        setCtaImagePreview(reader.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+    const preset = type === "philosophy" ? "homeHero" : "homeCta";
 
     const uploadFn = async () => {
       setError(null);
-      const result = await uploadHomeImage(file);
-      if (result.success) {
-        if (type === "philosophy") {
-          updateField("philosophyImageUrl", result.url);
+      try {
+        const compressedFile = await compressImageFile(file, { preset });
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (type === "philosophy") {
+            setPhilosophyImagePreview(reader.result as string);
+          } else {
+            setCtaImagePreview(reader.result as string);
+          }
+        };
+        reader.readAsDataURL(compressedFile);
+
+        const result = await uploadHomeImage(compressedFile);
+        if (result.success) {
+          if (type === "philosophy") {
+            updateField("philosophyImageUrl", result.url);
+          } else {
+            updateField("ctaBackgroundImageUrl", result.url);
+          }
         } else {
-          updateField("ctaBackgroundImageUrl", result.url);
+          setError(result.error || "Failed to upload image.");
         }
-      } else {
-        setError(result.error || "Failed to upload image.");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to compress or upload image.";
+        setError(message);
       }
     };
 

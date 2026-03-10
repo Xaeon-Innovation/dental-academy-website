@@ -38,5 +38,11 @@ Thumbs.db
 # Vercel
 .vercel
 
+# Local uploads (production uses Vercel Blob; avoid committing large media)
+web/public/videos/
+web/public/images/video-testimonials/
+web/public/images/courses/
+web/public/images/cases/
+
 # TypeScript
 *.tsbuildinfo
