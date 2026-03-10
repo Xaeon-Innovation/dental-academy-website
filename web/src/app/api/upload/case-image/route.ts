@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { put } from "@vercel/blob";
+import { addLogoWatermark } from "@/lib/imageWatermark";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // 60 seconds for large files
@@ -38,15 +39,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const bytes = await file.arrayBuffer();
+    const originalBuffer = Buffer.from(bytes);
+    const watermarkedBuffer = await addLogoWatermark(originalBuffer);
+
+    const timestamp = Date.now();
+    const lastDot = file.name.lastIndexOf(".");
+    const baseName = lastDot >= 0 ? file.name.slice(0, lastDot) : file.name;
+    const ext = "jpg";
+    const safeName = baseName.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const fileName = `${timestamp}_${safeName}.${ext}`;
+
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       try {
-        const lastDot = file.name.lastIndexOf(".");
-        const baseName = lastDot >= 0 ? file.name.slice(0, lastDot) : file.name;
-        const ext = (lastDot >= 0 ? file.name.slice(lastDot + 1) : "jpg").toLowerCase();
-        const safeName = baseName.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const pathname = `cases/${Date.now()}_${safeName}.${ext}`;
+        const pathname = `cases/${fileName}`;
 
-        const blob = await put(pathname, file, {
+        const blob = await put(pathname, watermarkedBuffer, {
           access: "public",
           addRandomSuffix: true,
         });
@@ -64,16 +72,6 @@ export async function POST(request: NextRequest) {
 
     // Local dev only: fallback to filesystem
     try {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const timestamp = Date.now();
-      const lastDot = file.name.lastIndexOf(".");
-      const baseName = lastDot >= 0 ? file.name.slice(0, lastDot) : file.name;
-      const originalExt = (lastDot >= 0 ? file.name.slice(lastDot + 1) : "jpg").toLowerCase();
-      const sanitizedBase = baseName.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const fullFileName = `${timestamp}_${sanitizedBase}.${originalExt}`;
-
       const publicDir = join(process.cwd(), "public", "images", "cases");
 
       try {
@@ -82,10 +80,10 @@ export async function POST(request: NextRequest) {
         // directory may already exist
       }
 
-      const filePath = join(publicDir, fullFileName);
-      await writeFile(filePath, buffer);
+      const filePath = join(publicDir, fileName);
+      await writeFile(filePath, watermarkedBuffer);
 
-      const url = `/images/cases/${fullFileName}`;
+      const url = `/images/cases/${fileName}`;
       return NextResponse.json({ success: true, url });
     } catch (err) {
       console.error("File system upload error:", err);
