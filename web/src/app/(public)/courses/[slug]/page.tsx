@@ -12,8 +12,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { getCourseBySlug, getCourses } from "@/lib/actions/course";
-import { SecureYourSpotCTA } from "@/components/SecureYourSpotCTA";
 import { SpotsLeft } from "@/components/SpotsLeft";
+import { CourseEnquiryForm } from "@/components/CourseEnquiryForm";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -314,13 +314,13 @@ export default async function CourseDetailPage({ params }: Props) {
             ) : null}
           </div>
 
-          {/* Sidebar — Secure Your Spot (scrolls inside viewport on lg+ so the form stays reachable without scrolling the whole page) */}
+          {/* Sidebar — Enquiry-first flow */}
           <aside className="scrollbar-brand lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-y-contain lg:self-start lg:[scrollbar-gutter:stable]">
             <div className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.06] to-black/40 shadow-xl">
               <div className="rounded-t-2xl border-b border-white/5 bg-accentGold/10 px-5 py-4">
-                <h3 className="font-semibold text-white">Secure Your Spot</h3>
+                <h3 className="font-semibold text-white">Enquire about this course</h3>
                 <p className="mt-0.5 text-xs text-white/60">
-                  Limited seats available for this intake.
+                  Ask questions first. Booking is completed after approval.
                 </p>
                 {detail?.maxParticipants && (
                   <div className="mt-2">
@@ -389,9 +389,9 @@ export default async function CourseDetailPage({ params }: Props) {
                     </p>
                   </>
                 )}
-                <SecureYourSpotCTA courseSlug={slug} courseId={course.id} />
+                <CourseEnquiryForm courseSlug={slug} courseId={course.id} />
                 <p className="mt-4 text-center text-xs text-white/50">
-                  By registering, you agree to our{" "}
+                  By enquiring, you agree to our{" "}
                   <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">
                     Terms
                   </Link>

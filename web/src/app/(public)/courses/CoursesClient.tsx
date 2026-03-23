@@ -7,6 +7,7 @@ import type { Course } from "@/types/course";
 import { EnrollButton } from "@/components/EnrollButton";
 import { FadeIn } from "@/components/FadeIn";
 import { SpotsLeft } from "@/components/SpotsLeft";
+import { CourseEnquiryForm } from "@/components/CourseEnquiryForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRegistrationsByUserId } from "@/lib/actions/student";
 
@@ -16,6 +17,7 @@ interface CoursesClientProps {
 
 export default function CoursesClient({ courses }: CoursesClientProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [enquiryCourse, setEnquiryCourse] = useState<Course | null>(null);
   const { user } = useAuth();
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
 
@@ -34,6 +36,21 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
       cancelled = true;
     };
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!enquiryCourse) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setEnquiryCourse(null);
+      }
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [enquiryCourse]);
 
   const toggleCard = (slug: string) => {
     setExpandedCard(expandedCard === slug ? null : slug);
@@ -170,13 +187,26 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                             >
                               Learn More
                             </Link>
-                            <EnrollButton
-                              courseSlug={course.slug}
-                              isEnrolled={isEnrolled ?? undefined}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Enroll Now
-                            </EnrollButton>
+                            {isEnrolled ? (
+                              <EnrollButton
+                                courseSlug={course.slug}
+                                isEnrolled={isEnrolled ?? undefined}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Go to delegate portal
+                              </EnrollButton>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEnquiryCourse(course);
+                                }}
+                                className="inline-block rounded-full border-2 border-accentGold px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:border-accentGold/80 hover:bg-accentGold/10"
+                              >
+                                Enquire now
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -207,6 +237,45 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
         </div>
         </div>
       </div>
+      {enquiryCourse && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="course-enquiry-modal-title"
+          onClick={() => setEnquiryCourse(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0B0B0D] p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 id="course-enquiry-modal-title" className="text-lg font-semibold text-white">
+                  Enquire about {enquiryCourse.title}
+                </h3>
+                <p className="mt-1 text-xs text-white/60">
+                  Share your details and our team will contact you shortly.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEnquiryCourse(null)}
+                className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+                aria-label="Close enquiry modal"
+              >
+                x
+              </button>
+            </div>
+            <CourseEnquiryForm
+              courseId={enquiryCourse.id}
+              courseSlug={enquiryCourse.slug}
+              title="Quick course enquiry"
+              className="rounded-xl border border-accentGold/20 bg-accentGold/5 p-4"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -60,7 +60,7 @@ export default function PortalTestimonialsPage() {
   );
 
   const eligibleRegistrations = registrations.filter(
-    (r) => r.status === "confirmed" || r.status === "completed"
+    (r) => r.status === "paid" || r.status === "confirmed" || r.status === "completed"
   );
 
   const defaultDisplayName =

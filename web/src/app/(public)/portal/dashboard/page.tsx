@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile } from "@/lib/actions/student";
 import { getCourses } from "@/lib/actions/course";
 import { computeRegistrationTotal, formatPrice, getBaseAmountCents, getRegistrationTotalBreakdown } from "@/lib/pricing";
-import { submitSpecialRequest } from "@/lib/actions/registration";
+import { submitSpecialRequest, confirmRegistrationForPayment } from "@/lib/actions/registration";
 import type { StudentProfile } from "@/types/student";
 import type { Registration } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -215,8 +215,10 @@ export default function PortalDashboardPage() {
                       const sr = reg.specialRequest;
                       const canPay =
                         effectiveAmountCents > 0 &&
+                        (reg.status === "pending_payment" || reg.status === "confirmed") &&
                         reg.paymentStatus !== "paid" &&
                         sr?.status !== "pending";
+                      const needsConfirmation = reg.status === "pending_confirmation";
                       const showSpecialRequestForm = !sr || sr.status === "declined";
                       const isSpecialRequestOpen = specialRequestRegId === reg.id;
                       return (
@@ -230,7 +232,11 @@ export default function PortalDashboardPage() {
                                 {reg.courseSlug ? formatSlug(reg.courseSlug) : reg.courseId}
                               </span>
                               <span className="ml-2 text-xs text-white/50">
-                                ({reg.status === "confirmed" && reg.paymentStatus !== "paid" ? "Pending payment" : reg.status})
+                                ({reg.status === "confirmed" && reg.paymentStatus !== "paid"
+                                  ? "Pending payment"
+                                  : reg.status === "pending_confirmation"
+                                    ? "Pending confirmation"
+                                    : reg.status})
                               </span>
                               <span className="ml-2 text-xs text-white/60">
                                 Total: {totalDisplay}
@@ -340,6 +346,18 @@ export default function PortalDashboardPage() {
                             </p>
                           )}
                           <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                            {needsConfirmation && user && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const result = await confirmRegistrationForPayment(reg.id, user.uid);
+                                  if (result.success) refetchRegistrations();
+                                }}
+                                className="w-fit rounded-full border border-accentGold bg-accentGold/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:bg-accentGold/20"
+                              >
+                                Confirm details
+                              </button>
+                            )}
                             {sr?.status === "pending" && (
                               <span className="text-xs text-white/50">
                                 Confirm and pay available after admin sets your request total

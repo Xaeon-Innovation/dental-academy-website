@@ -12,3 +12,4 @@ export type { BlogPost, BlogPostCreatePayload, BlogPostStatus } from "./blog";
 export type { Category, CategoryCreatePayload, CategoryType } from "./category";
 export type { SiteSettings } from "./settings";
 export type { AdminUser, AdminSession, AdminRole } from "./admin";
+export type { Enquiry, EnquiryStatus, EnquiryCreatePayload, EnquiryUtm } from "./enquiry";

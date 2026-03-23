@@ -1,6 +1,9 @@
 export type RegistrationStatus =
   | "pending"
+  | "pending_confirmation"
+  | "pending_payment"
   | "confirmed"
+  | "paid"
   | "cancelled"
   | "completed";
 
@@ -44,6 +47,9 @@ export interface Registration {
   name: string;
   phone?: string;
   status: RegistrationStatus;
+  origin?: "direct_registration" | "enquiry_conversion";
+  enquiryId?: string;
+  createdByAdminUid?: string;
   // Personal
   country: string;
   instagramHandle?: string;

@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/cases", label: "Cases" },
+  { href: "/admin/enquiries", label: "Enquiries" },
   { href: "/admin/registrations", label: "Registrations" },
   { href: "/admin/blog", label: "Blog" },
   { href: "/admin/home", label: "Home management" },

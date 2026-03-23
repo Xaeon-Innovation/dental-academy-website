@@ -195,7 +195,7 @@ export async function createOrUpdateTestimonial(
     const eligible = registrations.filter(
       (r) =>
         r.courseId === courseId &&
-        (r.status === "confirmed" || r.status === "completed")
+        (r.status === "paid" || r.status === "confirmed" || r.status === "completed")
     );
     if (eligible.length === 0) {
       return {

@@ -95,7 +95,10 @@ export default function RegistrationDetailsDialog({
 
   /** Admin sees "Confirmed" only when payment is paid. */
   function effectiveStatusForAdmin(reg: Registration): RegistrationStatus | "pending" {
-    if (reg.paymentStatus === "paid") return reg.status;
+    if (reg.paymentStatus === "paid" || reg.status === "paid") return "paid";
+    if (reg.status === "pending_confirmation" || reg.status === "pending_payment") {
+      return reg.status;
+    }
     if (reg.status === "confirmed") return "pending";
     return reg.status;
   }
@@ -106,6 +109,12 @@ export default function RegistrationDetailsDialog({
         return "bg-yellow-500/20 text-yellow-400";
       case "confirmed":
         return "bg-green-500/20 text-green-400";
+      case "pending_confirmation":
+        return "bg-indigo-500/20 text-indigo-300";
+      case "pending_payment":
+        return "bg-amber-500/20 text-amber-300";
+      case "paid":
+        return "bg-emerald-500/20 text-emerald-300";
       case "cancelled":
         return "bg-red-500/20 text-red-400";
       case "completed":
@@ -214,11 +223,10 @@ export default function RegistrationDetailsDialog({
                     updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:border-accentGold/50 focus:border-accentGold/50 focus:outline-none"
                   } ${getStatusBadgeColor(effectiveStatusForAdmin(registration))}`}
                 >
-                  <option value="pending">
-                    {registration.status === "confirmed" && registration.paymentStatus !== "paid"
-                      ? "Pending payment"
-                      : "Pending"}
-                  </option>
+                  <option value="pending">Pending</option>
+                  <option value="pending_confirmation">Pending confirmation</option>
+                  <option value="pending_payment">Pending payment</option>
+                  <option value="paid">Paid</option>
                   <option value="confirmed" disabled={registration.paymentStatus !== "paid"}>
                     Confirmed
                   </option>

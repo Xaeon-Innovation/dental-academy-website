@@ -6,6 +6,9 @@ export const db = getFirestore(app);
 export const COLLECTIONS = {
   courses: "courses",
   registrations: "registrations",
+  enquiries: "enquiries",
+  authAuditLogs: "authAuditLogs",
+  loginRateLimits: "loginRateLimits",
   blog: "blog",
   categories: "categories",
   settings: "settings",

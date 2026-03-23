@@ -4,12 +4,13 @@ import { useState, FormEvent, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  signInWithEmailAndPassword,
+  signInWithCustomToken,
   createUserWithEmailAndPassword,
   auth,
 } from "@/lib/firebase/auth";
 import { createOrUpdateStudentProfile } from "@/lib/actions/student";
 import { submitMinimalEnrollment } from "@/lib/actions/registration";
+import { authenticateWithEmailPhone } from "@/lib/actions/enquiry";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import { z } from "zod";
@@ -158,10 +159,16 @@ function PortalPageContent() {
     setFieldErrors({});
     setIsLoading(true);
     try {
-      await withTimeout(
-        signInWithEmailAndPassword(auth, email, password),
+      const authResult = await withTimeout(
+        authenticateWithEmailPhone({ email, phone }),
         AUTH_TIMEOUT_MS
       );
+      if (!authResult.success) {
+        setError(authResult.error);
+        setIsLoading(false);
+        return;
+      }
+      await withTimeout(signInWithCustomToken(auth, authResult.customToken), AUTH_TIMEOUT_MS);
       const cred = auth.currentUser;
       if (!cred) throw new Error("Signed in but no user session.");
 
@@ -187,8 +194,8 @@ function PortalPageContent() {
       if (err instanceof Error && err.message === "AUTH_TIMEOUT") {
         setError("Request timed out. Please check your connection and try again.");
       } else {
-        const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
-        setError(authErrorMessage(code, "Failed to sign in. Please try again."));
+        const fallback = err instanceof Error ? err.message : "Failed to sign in. Please try again.";
+        setError(fallback);
       }
     } finally {
       setIsLoading(false);
@@ -271,7 +278,7 @@ function PortalPageContent() {
               ? "Choose a password below. We'll create your account, enroll you in the course, and open your delegate dashboard."
               : finalizeEnroll && finalizeDraftMissing
                 ? "We couldn't load your enrollment details. Go back to the course page and tap \"Finish sign up and enroll\" again."
-                : "Sign in or create an account to enroll in courses and access your dashboard."}
+                : "Log in with your approved email and phone number to access your delegate dashboard."}
           </p>
 
           {finalizeEnroll && finalizeDraftMissing && (
@@ -298,23 +305,25 @@ function PortalPageContent() {
             >
               Log in
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (finalizeEnroll && finalizeDraftMissing) return;
-                setMode("signup");
-                setError(null);
-                setFieldErrors({});
-              }}
-              disabled={finalizeEnroll && finalizeDraftMissing}
-              className={`pb-3 text-sm font-medium transition ${
-                mode === "signup"
-                  ? "border-b-2 border-accentGold text-accentGold"
-                  : "text-white/60 hover:text-white/80"
-              } ${finalizeEnroll && finalizeDraftMissing ? "cursor-not-allowed opacity-40" : ""}`}
-            >
-              Sign up
-            </button>
+            {finalizeEnroll && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (finalizeEnroll && finalizeDraftMissing) return;
+                  setMode("signup");
+                  setError(null);
+                  setFieldErrors({});
+                }}
+                disabled={finalizeEnroll && finalizeDraftMissing}
+                className={`pb-3 text-sm font-medium transition ${
+                  mode === "signup"
+                    ? "border-b-2 border-accentGold text-accentGold"
+                    : "text-white/60 hover:text-white/80"
+                } ${finalizeEnroll && finalizeDraftMissing ? "cursor-not-allowed opacity-40" : ""}`}
+              >
+                Sign up
+              </button>
+            )}
           </div>
 
           {mode === "login" ? (
@@ -342,19 +351,19 @@ function PortalPageContent() {
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="mb-1 block text-xs text-white/70">
-                  Password
+                <label htmlFor="login-phone" className="mb-1 block text-xs text-white/70">
+                  Phone number
                 </label>
                 <input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="login-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                   disabled={isLoading}
                   className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
+                  placeholder="+44 7XXX XXXXXX"
+                  autoComplete="tel"
                 />
               </div>
               <button

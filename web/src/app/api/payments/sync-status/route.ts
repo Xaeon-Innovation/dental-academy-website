@@ -91,12 +91,25 @@ export async function POST(request: NextRequest) {
     const { FieldValue } = await import("firebase-admin/firestore");
 
     if (paymentIntent.status === "succeeded") {
-      await adminDb.collection(COLLECTIONS.registrations).doc(registrationId).update({
+      const regRef = adminDb.collection(COLLECTIONS.registrations).doc(registrationId);
+      const regSnap = await regRef.get();
+      const enquiryId = regSnap.exists
+        ? ((regSnap.data() ?? {}).enquiryId as string | undefined)
+        : undefined;
+      await regRef.update({
         paymentStatus: "paid",
-        status: "confirmed",
+        status: "paid",
         paidAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+      if (enquiryId) {
+        await adminDb.collection(COLLECTIONS.enquiries).doc(enquiryId).update({
+          status: "converted",
+          convertedAt: FieldValue.serverTimestamp(),
+          linkedRegistrationId: registrationId,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
       return NextResponse.json({ success: true, status: "succeeded" });
     }
 

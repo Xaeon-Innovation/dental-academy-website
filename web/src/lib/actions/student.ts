@@ -18,6 +18,7 @@ import { getAuth } from "firebase-admin/auth";
 import { isAdminEmail } from "@/lib/actions/settings";
 import type { StudentProfile, StudentProfileCreatePayload, StudentProfileUpdatePayload } from "@/types/student";
 import type { Registration } from "@/types/registration";
+import { normalizeEmail, normalizePhone } from "@/lib/identity";
 
 function toDate(val: unknown): Date | undefined {
   if (val && typeof (val as { toDate?: () => Date }).toDate === "function") {
@@ -60,6 +61,7 @@ function convertTimestamps(data: Record<string, unknown> | null): Record<string,
   const converted = { ...data };
   converted.createdAt = toDate(converted.createdAt) ?? converted.createdAt;
   converted.updatedAt = toDate(converted.updatedAt) ?? converted.updatedAt;
+  converted.approvedAt = toDate(converted.approvedAt) ?? converted.approvedAt;
   if (converted.savedFormSnapshot && typeof converted.savedFormSnapshot === "object") {
     converted.savedFormSnapshot = converted.savedFormSnapshot as Record<string, unknown>;
   }
@@ -91,6 +93,16 @@ export async function createOrUpdateStudentProfile(
   data: StudentProfileCreatePayload | StudentProfileUpdatePayload
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
+    const nextData: Record<string, unknown> = { ...data };
+    if (typeof nextData.email === "string" && nextData.email.trim()) {
+      nextData.normalizedEmail = normalizeEmail(nextData.email);
+    }
+    if (typeof nextData.phone === "string" && nextData.phone.trim()) {
+      nextData.normalizedPhone = normalizePhone(nextData.phone);
+    }
+    if (nextData.loginEnabled === undefined) {
+      nextData.loginEnabled = true;
+    }
     const adminDb = getAdminDb();
     if (adminDb) {
       const { FieldValue } = await import("firebase-admin/firestore");
@@ -98,12 +110,12 @@ export async function createOrUpdateStudentProfile(
       const snap = await ref.get();
       const now = FieldValue.serverTimestamp();
       if (snap.exists) {
-        const updateData: Record<string, unknown> = { ...data, updatedAt: now };
+        const updateData: Record<string, unknown> = { ...nextData, updatedAt: now };
         delete updateData.uid;
         delete updateData.createdAt;
         await ref.update(updateData);
       } else {
-        await ref.set({ uid, ...data, createdAt: now, updatedAt: now });
+        await ref.set({ uid, ...nextData, createdAt: now, updatedAt: now });
       }
       return { success: true };
     }
@@ -111,12 +123,12 @@ export async function createOrUpdateStudentProfile(
     const snap = await getDoc(ref);
     const now = serverTimestamp();
     if (snap.exists()) {
-      const updateData: Record<string, unknown> = { ...data, updatedAt: now };
+      const updateData: Record<string, unknown> = { ...nextData, updatedAt: now };
       delete updateData.uid;
       delete updateData.createdAt;
       await updateDoc(ref, updateData);
     } else {
-      await setDoc(ref, { uid, ...data, createdAt: now, updatedAt: now });
+      await setDoc(ref, { uid, ...nextData, createdAt: now, updatedAt: now });
     }
     return { success: true };
   } catch (err) {

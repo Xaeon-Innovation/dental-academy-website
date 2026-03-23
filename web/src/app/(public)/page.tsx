@@ -11,16 +11,18 @@ import { TextReveal } from "@/components/TextReveal";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
 import { getHomeSettings } from "@/lib/actions/settings";
 import { getTestimonialsForDisplay } from "@/lib/actions/testimonial";
+import { getCourses } from "@/lib/actions/course";
 import type { HomeSettings } from "@/types/settings";
 
 // Always fetch latest home content (hero image, CTA, etc.) so admin uploads appear immediately
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [instructors, homeSettings, testimonialsFromDb] = await Promise.all([
+  const [instructors, homeSettings, testimonialsFromDb, courses] = await Promise.all([
     getInstructorsForPage("home"),
     getHomeSettings(),
     getTestimonialsForDisplay(),
+    getCourses(),
   ]);
 
   const home: HomeSettings = homeSettings ?? {};
@@ -220,7 +222,11 @@ export default async function HomePage() {
           <p className="mt-4 text-sm text-white/70 md:text-base">
             {ctaBody}
           </p>
-          <HomeCtaButtons />
+          <HomeCtaButtons
+            availableCourses={courses
+              .filter((course) => course.status === "open")
+              .map((course) => ({ id: course.id, slug: course.slug, title: course.title }))}
+          />
         </FadeIn>
       </section>
     </main>

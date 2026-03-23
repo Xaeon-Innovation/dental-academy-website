@@ -118,6 +118,7 @@ export async function submitRegistration(
       ...data,
       ...(userId ? { userId } : {}),
       status: "pending",
+      origin: "direct_registration",
       amountDueCents,
       ...(paymentStatus ? { paymentStatus } : {}),
       createdAt: serverTimestamp(),
@@ -200,6 +201,7 @@ export async function submitMinimalEnrollment(
       ...(note ? { enrollmentNote: note } : {}),
       minimalEnrollment: true,
       status: "pending" as const,
+      origin: "direct_registration" as const,
       country: "—",
       currentRole: "Not provided (minimal enrollment)",
       hasPlacedImplants: false,
@@ -299,7 +301,13 @@ export async function updateRegistrationByStudent(
       if (!snap.exists) return { success: false, error: "Enrollment not found." };
       const existing = snap.data()!;
       if (existing.userId !== userId) return { success: false, error: "You can only update your own enrollment." };
-      if (existing.status !== "pending") return { success: false, error: "You can only update an enrollment that is still pending. Once confirmed, it cannot be changed." };
+      if (existing.status !== "pending" && existing.status !== "pending_confirmation") {
+        return {
+          success: false,
+          error:
+            "You can only update an enrollment that is still pending confirmation.",
+        };
+      }
       await ref.update({ ...payload, updatedAt: FieldValue.serverTimestamp() });
       return { success: true };
     }
@@ -308,11 +316,58 @@ export async function updateRegistrationByStudent(
     if (!snap.exists()) return { success: false, error: "Enrollment not found." };
     const existing = snap.data();
     if (existing?.userId !== userId) return { success: false, error: "You can only update your own enrollment." };
-    if (existing?.status !== "pending") return { success: false, error: "You can only update an enrollment that is still pending. Once confirmed, it cannot be changed." };
+    if (existing?.status !== "pending" && existing?.status !== "pending_confirmation") {
+      return {
+        success: false,
+        error: "You can only update an enrollment that is still pending confirmation.",
+      };
+    }
     await updateDoc(ref, { ...payload, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update enrollment";
+    return { success: false, error: message };
+  }
+}
+
+export async function confirmRegistrationForPayment(
+  registrationId: string,
+  userId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const adminDb = getAdminDb();
+    if (adminDb) {
+      const { FieldValue } = await import("firebase-admin/firestore");
+      const ref = adminDb.collection(COLLECTIONS.registrations).doc(registrationId);
+      const snap = await ref.get();
+      if (!snap.exists) return { success: false, error: "Enrollment not found." };
+      const existing = snap.data()!;
+      if (existing.userId !== userId) {
+        return { success: false, error: "You can only confirm your own enrollment." };
+      }
+      if (existing.status !== "pending_confirmation" && existing.status !== "pending") {
+        return { success: false, error: "This enrollment is already confirmed." };
+      }
+      await ref.update({
+        status: "pending_payment",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { success: true };
+    }
+    const ref = doc(db, COLLECTIONS.registrations, registrationId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { success: false, error: "Enrollment not found." };
+    const existing = snap.data()!;
+    if (existing.userId !== userId) {
+      return { success: false, error: "You can only confirm your own enrollment." };
+    }
+    if (existing.status !== "pending_confirmation" && existing.status !== "pending") {
+      return { success: false, error: "This enrollment is already confirmed." };
+    }
+    await updateDoc(ref, { status: "pending_payment", updatedAt: serverTimestamp() });
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to confirm enrollment";
     return { success: false, error: message };
   }
 }

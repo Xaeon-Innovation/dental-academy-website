@@ -25,7 +25,8 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
   const { user, isAdmin } = useAuth();
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const enrollHref = user ? "/courses" : "/portal?redirect=" + encodeURIComponent("/courses");
+  const enquireHref = "/courses";
+  const portalHref = "/portal?redirect=" + encodeURIComponent("/portal/dashboard");
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -128,12 +129,20 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
               </Link>
             )
           ) : (
-            <Link
-              href={enrollHref}
-              className="rounded-full border border-accentGold bg-accentGold px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
-            >
-              Enroll
-            </Link>
+            <>
+              <Link
+                href={portalHref}
+                className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
+              >
+                Portal
+              </Link>
+              <Link
+                href={enquireHref}
+                className="rounded-full border border-accentGold bg-accentGold px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
+              >
+                Enquire
+              </Link>
+            </>
           )}
         </div>
       </div>
