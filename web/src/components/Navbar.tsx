@@ -131,16 +131,16 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
           ) : (
             <>
               <Link
-                href={portalHref}
-                className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
-              >
-                Portal
-              </Link>
-              <Link
                 href={enquireHref}
                 className="rounded-full border border-accentGold bg-accentGold px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
               >
                 Enquire
+              </Link>
+              <Link
+                href={portalHref}
+                className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
+              >
+                Portal
               </Link>
             </>
           )}
