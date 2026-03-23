@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile, updateStudentSavedForm } from "@/lib/actions/student";
 import { getCourses } from "@/lib/actions/course";
-import { computeRegistrationTotal } from "@/lib/pricing";
+import { computeRegistrationTotal, formatPrice, getBaseAmountCents, getRegistrationTotalBreakdown } from "@/lib/pricing";
+import { submitSpecialRequest } from "@/lib/actions/registration";
 import type { StudentProfile } from "@/types/student";
 import type { Registration } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -14,6 +15,7 @@ import StudentDashboardGuard from "./StudentDashboardGuard";
 import DashboardProfileForm from "./DashboardProfileForm";
 import DashboardSavedFormEditor from "./DashboardSavedFormEditor";
 import LoadingScreen from "@/components/LoadingScreen";
+import StripePaymentForm from "@/components/portal/StripePaymentForm";
 
 function formatSlug(slug: string): string {
   return slug
@@ -22,12 +24,27 @@ function formatSlug(slug: string): string {
     .join(" ");
 }
 
+function formatAmountDue(amountDueCents: number | undefined): string {
+  if (amountDueCents == null || amountDueCents === 0) return "On request";
+  return formatPrice((amountDueCents ?? 0) / 100);
+}
+
 export default function PortalDashboardPage() {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [registrations, setRegistrations] = useState<(Registration & { id: string })[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentRegistrationId, setPaymentRegistrationId] = useState<string | null>(null);
+  const [specialRequestRegId, setSpecialRequestRegId] = useState<string | null>(null);
+  const [specialRequestText, setSpecialRequestText] = useState("");
+  const [specialRequestSubmitting, setSpecialRequestSubmitting] = useState(false);
+  const [specialRequestError, setSpecialRequestError] = useState<string | null>(null);
+
+  const refetchRegistrations = useCallback(() => {
+    if (!user) return;
+    getRegistrationsByUserId(user.uid).then(setRegistrations);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -42,6 +59,17 @@ export default function PortalDashboardPage() {
       setLoading(false);
     });
   }, [user]);
+
+  // Refetch when returning from Stripe redirect (e.g. 3DS) with ?paid=registrationId
+  useEffect(() => {
+    if (typeof window === "undefined" || !user) return;
+    const params = new URLSearchParams(window.location.search);
+    const paidId = params.get("paid");
+    if (paidId) {
+      refetchRegistrations();
+      window.history.replaceState({}, "", "/portal/dashboard");
+    }
+  }, [user, refetchRegistrations]);
 
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
@@ -131,41 +159,158 @@ export default function PortalDashboardPage() {
                     {registrations.map((reg) => {
                       const course = courseById.get(reg.courseId);
                       const totalResult = computeRegistrationTotal(reg, course);
+                      const effectiveAmountCents = reg.amountDueCents ?? (course ? getBaseAmountCents(reg, course) : 0);
+                      const totalDisplay = reg.amountDueCents != null ? formatAmountDue(reg.amountDueCents) : (totalResult?.formattedTotal ?? (course ? "On request" : "—"));
+                      const breakdown = getRegistrationTotalBreakdown(reg, course ?? undefined);
+                      const sr = reg.specialRequest;
+                      const canPay =
+                        effectiveAmountCents > 0 &&
+                        reg.paymentStatus !== "paid" &&
+                        sr?.status !== "pending";
+                      const showSpecialRequestForm = !sr || sr.status === "declined";
+                      const isSpecialRequestOpen = specialRequestRegId === reg.id;
                       return (
                         <li
                           key={reg.id}
-                          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-white/5 bg-black/20 px-4 py-3"
+                          className="flex flex-col gap-2 rounded-lg border border-white/5 bg-black/20 px-4 py-3"
                         >
-                          <div>
-                            <span className="font-medium text-white">
-                              {reg.courseSlug ? formatSlug(reg.courseSlug) : reg.courseId}
-                            </span>
-                            <span className="ml-2 text-xs text-white/50">({reg.status})</span>
-                            {totalResult && (
+                          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                            <div>
+                              <span className="font-medium text-white">
+                                {reg.courseSlug ? formatSlug(reg.courseSlug) : reg.courseId}
+                              </span>
+                              <span className="ml-2 text-xs text-white/50">
+                                ({reg.status === "confirmed" && reg.paymentStatus !== "paid" ? "Pending payment" : reg.status})
+                              </span>
                               <span className="ml-2 text-xs text-white/60">
-                                Total: {totalResult.formattedTotal}
+                                Total: {totalDisplay}
+                              </span>
+                              {reg.paymentStatus === "paid" && (
+                                <span className="ml-2 text-xs text-green-400">Paid</span>
+                              )}
+                              {reg.paymentStatus === "failed" && (
+                                <span className="ml-2 text-xs text-red-400">Payment failed</span>
+                              )}
+                              {sr?.status === "pending" && (
+                                <span className="ml-2 text-xs text-amber-400">Special request pending</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              {reg.status === "pending" && (
+                                <Link
+                                  href={`/portal/dashboard/enrollments/${reg.id}/edit`}
+                                  className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                                >
+                                  Update enrollment
+                                </Link>
+                              )}
+                              {reg.courseSlug && (
+                                <Link
+                                  href={`/courses/${reg.courseSlug}`}
+                                  className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                                >
+                                  View course
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                          {breakdown && (
+                            <div className="rounded border border-white/5 bg-black/10 px-3 py-2 text-xs text-white/80">
+                              {breakdown.earlyBird ? (
+                                <p>Early bird = {breakdown.earlyBird}</p>
+                              ) : null}
+                              {breakdown.standard ? (
+                                <p>Standard = {breakdown.standard}</p>
+                              ) : null}
+                              {breakdown.singleOccupancy ? (
+                                <p>Single occupancy = {breakdown.singleOccupancy}</p>
+                              ) : null}
+                              {breakdown.specialRequest ? (
+                                <p>Special request = {breakdown.specialRequest}</p>
+                              ) : null}
+                              <p className="mt-1 font-medium text-white">Total = {breakdown.total}</p>
+                            </div>
+                          )}
+                          {showSpecialRequestForm && reg.status !== "cancelled" && (
+                            <div className="mt-2 border-t border-white/5 pt-2">
+                              {!isSpecialRequestOpen ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSpecialRequestRegId(reg.id)}
+                                  className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                                >
+                                  Add special request
+                                </button>
+                              ) : (
+                                <div>
+                                  <textarea
+                                    value={specialRequestText}
+                                    onChange={(e) => setSpecialRequestText(e.target.value)}
+                                    placeholder="Describe your request (e.g. dietary, accessibility). Admin will set any extra fees."
+                                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/50"
+                                    rows={2}
+                                  />
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={specialRequestSubmitting}
+                                      onClick={async () => {
+                                        if (!user) return;
+                                        setSpecialRequestError(null);
+                                        setSpecialRequestSubmitting(true);
+                                        const result = await submitSpecialRequest(reg.id, specialRequestText, user.uid);
+                                        setSpecialRequestSubmitting(false);
+                                        if (result.success) {
+                                          setSpecialRequestRegId(null);
+                                          setSpecialRequestText("");
+                                          refetchRegistrations();
+                                        } else {
+                                          setSpecialRequestError(result.error ?? "Failed to submit");
+                                        }
+                                      }}
+                                      className="rounded-lg bg-accentGold px-3 py-1.5 text-xs font-semibold text-background hover:bg-accentGold/90 disabled:opacity-50"
+                                    >
+                                      {specialRequestSubmitting ? "Submitting…" : "Submit request"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSpecialRequestRegId(null);
+                                        setSpecialRequestText("");
+                                        setSpecialRequestError(null);
+                                      }}
+                                      className="text-xs text-white/70 hover:text-white"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                  {specialRequestError && (
+                                    <p className="mt-1 text-xs text-red-400">{specialRequestError}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {sr && sr.status !== "pending" && sr.description && (
+                            <p className="text-xs text-white/60">
+                              Special request: {sr.description}
+                              {sr.status === "priced" && " (extra fees set — see total above)"}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                            {sr?.status === "pending" && (
+                              <span className="text-xs text-white/50">
+                                Confirm and pay available after admin sets your request total
                               </span>
                             )}
-                            {totalResult === null && course && (
-                              <span className="ml-2 text-xs text-white/50">On request</span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3">
-                            {reg.status === "pending" && (
-                              <Link
-                                href={`/portal/dashboard/enrollments/${reg.id}/edit`}
-                                className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
+                            {canPay && (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentRegistrationId(reg.id)}
+                                className="w-fit rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-green-400 transition hover:border-green-400/50 hover:bg-green-500/10 hover:text-green-300"
                               >
-                                Update enrollment
-                              </Link>
-                            )}
-                            {reg.courseSlug && (
-                              <Link
-                                href={`/courses/${reg.courseSlug}`}
-                                className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
-                              >
-                                View course
-                              </Link>
+                                Confirm and pay
+                              </button>
                             )}
                           </div>
                         </li>
@@ -203,6 +348,22 @@ export default function PortalDashboardPage() {
                   onSave={handleSavedFormSave}
                 />
               </section>
+            </div>
+          )}
+
+          {paymentRegistrationId && user && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPaymentRegistrationId(null)}>
+              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md">
+                <StripePaymentForm
+                  registrationId={paymentRegistrationId}
+                  getToken={async () => (await user.getIdToken()) ?? ""}
+                  onSuccess={() => {
+                    setPaymentRegistrationId(null);
+                    refetchRegistrations();
+                  }}
+                  onClose={() => setPaymentRegistrationId(null)}
+                />
+              </div>
             </div>
           )}
         </div>

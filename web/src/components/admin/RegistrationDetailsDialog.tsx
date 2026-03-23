@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { updateRegistrationStatus } from "@/lib/actions/registration";
-import { computeRegistrationTotal } from "@/lib/pricing";
+import { updateRegistrationStatus, setSpecialRequestExtraFees } from "@/lib/actions/registration";
+import { computeRegistrationTotal, formatPrice, getRegistrationTotalBreakdown } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration, RegistrationStatus } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -15,6 +15,10 @@ interface RegistrationDetailsDialogProps {
   course?: Course;
   onClose: () => void;
   onStatusUpdate?: () => void;
+  /** Called after extra fees are set successfully (e.g. close dialog and switch to enrollments tab). */
+  onFeesSet?: () => void;
+  /** Required for admin to set extra fees on special requests. */
+  getToken?: () => Promise<string>;
 }
 
 export default function RegistrationDetailsDialog({
@@ -25,9 +29,14 @@ export default function RegistrationDetailsDialog({
   course,
   onClose,
   onStatusUpdate,
+  onFeesSet,
+  getToken,
 }: RegistrationDetailsDialogProps) {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [extraFeesPounds, setExtraFeesPounds] = useState("");
+  const [settingFees, setSettingFees] = useState(false);
+  const [feesError, setFeesError] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -53,7 +62,14 @@ export default function RegistrationDetailsDialog({
     }
   }
 
-  function getStatusBadgeColor(status: RegistrationStatus): string {
+  /** Admin sees "Confirmed" only when payment is paid. */
+  function effectiveStatusForAdmin(reg: Registration): RegistrationStatus | "pending" {
+    if (reg.paymentStatus === "paid") return reg.status;
+    if (reg.status === "confirmed") return "pending";
+    return reg.status;
+  }
+
+  function getStatusBadgeColor(status: RegistrationStatus | "pending"): string {
     switch (status) {
       case "pending":
         return "bg-yellow-500/20 text-yellow-400";
@@ -151,16 +167,22 @@ export default function RegistrationDetailsDialog({
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Status</label>
                 <select
-                  value={registration.status}
+                  value={effectiveStatusForAdmin(registration)}
                   onChange={(e) => handleStatusChange(e.target.value as RegistrationStatus)}
                   disabled={updatingStatus}
-                  title="Update enrollment status"
+                  title={registration.paymentStatus !== "paid" ? "Confirmed only after payment" : "Update enrollment status"}
                   className={`mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white capitalize transition ${
                     updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:border-accentGold/50 focus:border-accentGold/50 focus:outline-none"
-                  } ${getStatusBadgeColor(registration.status)}`}
+                  } ${getStatusBadgeColor(effectiveStatusForAdmin(registration))}`}
                 >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
+                  <option value="pending">
+                    {registration.status === "confirmed" && registration.paymentStatus !== "paid"
+                      ? "Pending payment"
+                      : "Pending"}
+                  </option>
+                  <option value="confirmed" disabled={registration.paymentStatus !== "paid"}>
+                    Confirmed
+                  </option>
                   <option value="cancelled">Cancelled</option>
                   <option value="completed">Completed</option>
                 </select>
@@ -175,14 +197,39 @@ export default function RegistrationDetailsDialog({
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Enrollment Date</label>
                 <p className="mt-1 text-white">{formatDate(registration.createdAt)}</p>
               </div>
-              {course && (
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Total</label>
-                  <p className="mt-1 text-white">
-                    {computeRegistrationTotal(registration, course)?.formattedTotal ?? "On request"}
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Amount due</label>
+                <p className="mt-1 text-white">
+                  {registration.amountDueCents != null
+                    ? formatPrice((registration.amountDueCents ?? 0) / 100)
+                    : (course ? (computeRegistrationTotal(registration, course)?.formattedTotal ?? "On request") : "On request")}
+                </p>
+              </div>
+              {(() => {
+                const breakdown = getRegistrationTotalBreakdown(registration, course);
+                return breakdown ? (
+                  <div className="col-span-2 rounded border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/80">
+                    {breakdown.earlyBird ? <p>Early bird = {breakdown.earlyBird}</p> : null}
+                    {breakdown.standard ? <p>Standard = {breakdown.standard}</p> : null}
+                    {breakdown.singleOccupancy ? <p>Single occupancy = {breakdown.singleOccupancy}</p> : null}
+                    {breakdown.specialRequest ? <p>Special request = {breakdown.specialRequest}</p> : null}
+                    <p className="mt-1 font-medium text-white">Total = {breakdown.total}</p>
+                  </div>
+                ) : null;
+              })()}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Payment status</label>
+                <p className="mt-1 text-white">
+                  {registration.paymentStatus === "paid" && "Paid"}
+                  {registration.paymentStatus === "unpaid" && "Unpaid"}
+                  {registration.paymentStatus === "failed" && "Failed"}
+                  {registration.paymentStatus === "refunded" && "Refunded"}
+                  {!registration.paymentStatus && "—"}
+                </p>
+                {registration.paymentStatus === "paid" && registration.paidAt && (
+                  <p className="mt-0.5 text-xs text-white/60">Paid at {formatDate(registration.paidAt)}</p>
+                )}
+              </div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Country</label>
                 <p className="mt-1 text-white">{registration.country || "—"}</p>
@@ -216,6 +263,86 @@ export default function RegistrationDetailsDialog({
                     <li key={idx}>{aspect}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+            {(registration.specialRequest || ((registration.amountDueCents == null || registration.amountDueCents === 0) && getToken)) && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+                {registration.specialRequest && (
+                  <>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-amber-400/90">
+                      Delegate special request
+                    </label>
+                    <p className="mt-2 text-sm text-white">{registration.specialRequest.description}</p>
+                    <p className="mt-1 text-xs text-white/50">Status: {registration.specialRequest.status}</p>
+                  </>
+                )}
+                {((registration.specialRequest?.status === "pending") || ((registration.amountDueCents == null || registration.amountDueCents === 0) && !registration.specialRequest)) && getToken && (
+                  <>
+                    <p className="mt-3 text-xs text-white/70">
+                      {registration.specialRequest?.status === "pending"
+                        ? "Set the extra fee amount below. The delegate&apos;s total will update in their dashboard and they can then confirm and pay."
+                        : "Set the total amount the delegate should pay."}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-end gap-3">
+                      <div>
+                        <label className="block text-xs text-white/60">
+                          {registration.specialRequest?.status === "pending" ? "Extra fees (£)" : "Set total due (£)"}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={extraFeesPounds}
+                          onChange={(e) => {
+                            setExtraFeesPounds(e.target.value);
+                            setFeesError(null);
+                          }}
+                          className="mt-1 w-28 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                          placeholder="0"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={settingFees}
+                        onClick={async () => {
+                          const pounds = parseFloat(extraFeesPounds);
+                          if (Number.isNaN(pounds) || pounds < 0) {
+                            setFeesError("Enter a valid amount (e.g. 50 or 0)");
+                            return;
+                          }
+                          setSettingFees(true);
+                          setFeesError(null);
+                          try {
+                            const token = await getToken();
+                            const result = await setSpecialRequestExtraFees(
+                              registration.id,
+                              Math.round(pounds * 100),
+                              token
+                            );
+                            if (result.success) {
+                              setExtraFeesPounds("");
+                              await onStatusUpdate?.();
+                              onFeesSet?.();
+                            } else {
+                              setFeesError(result.error ?? "Failed to set extra fees");
+                            }
+                          } catch {
+                            setFeesError("Failed to set extra fees");
+                          } finally {
+                            setSettingFees(false);
+                          }
+                        }}
+                        className="rounded-lg bg-accentGold px-4 py-2 text-sm font-semibold text-background hover:bg-accentGold/90 disabled:opacity-50"
+                      >
+                        {settingFees ? "Setting…" : "Set extra fees"}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {feesError && <p className="mt-2 text-xs text-red-400">{feesError}</p>}
+                {!registration.specialRequest && (registration.amountDueCents == null || registration.amountDueCents === 0) && (
+                  <p className="mt-2 text-xs text-white/50">For &quot;On request&quot; courses, set the total amount the delegate should pay.</p>
+                )}
               </div>
             )}
           </div>

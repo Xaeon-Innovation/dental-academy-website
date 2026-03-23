@@ -4,6 +4,16 @@ export type RegistrationStatus =
   | "cancelled"
   | "completed";
 
+export type PaymentStatus = "unpaid" | "paid" | "failed" | "refunded";
+
+export type SpecialRequestStatus = "pending" | "priced" | "declined";
+
+export interface SpecialRequest {
+  description: string;
+  requestedAt: Date;
+  status: SpecialRequestStatus;
+}
+
 export type PrimaryWorkSetting =
   | "NHS"
   | "Private"
@@ -56,6 +66,16 @@ export interface Registration {
   consentContact: boolean;
   /** Student chose single occupancy upgrade (adds pricing.singleOccupancyUpgrade to total) */
   singleOccupancyUpgrade?: boolean;
+  // Payment (Stripe)
+  /** Total amount to pay in smallest currency unit (e.g. pence). Set from course pricing + optional extra fees. */
+  amountDueCents?: number;
+  paymentStatus?: PaymentStatus;
+  stripePaymentIntentId?: string;
+  paidAt?: Date;
+  // Special request (delegate requests something; admin sets extra fee)
+  specialRequest?: SpecialRequest;
+  /** Admin-set extra fees in smallest currency unit (e.g. pence). */
+  extraFeesCents?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }

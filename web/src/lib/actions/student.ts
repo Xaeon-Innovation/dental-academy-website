@@ -21,7 +21,36 @@ function toDate(val: unknown): Date | undefined {
   if (val && typeof (val as { toDate?: () => Date }).toDate === "function") {
     return (val as { toDate: () => Date }).toDate();
   }
+  if (val instanceof Timestamp) {
+    return val.toDate();
+  }
+  if (val && typeof val === "object" && "_seconds" in val && typeof (val as { _seconds: number })._seconds === "number") {
+    const s = (val as { _seconds: number; _nanoseconds?: number })._seconds;
+    return new Date(s * 1000);
+  }
   return undefined;
+}
+
+/** Normalize registration so Firestore Timestamps become plain Dates (serializable to Client Components). */
+function normalizeRegistrationForClient(
+  id: string,
+  data: Record<string, unknown>
+): Registration & { id: string } {
+  const sr = data.specialRequest as { description?: string; requestedAt?: unknown; status?: string } | undefined;
+  return {
+    ...data,
+    id,
+    createdAt: toDate(data.createdAt),
+    updatedAt: toDate(data.updatedAt),
+    paidAt: toDate(data.paidAt),
+    specialRequest: sr
+      ? {
+          description: sr.description ?? "",
+          status: (sr.status as Registration["specialRequest"]["status"]) ?? "pending",
+          requestedAt: toDate(sr.requestedAt) ?? new Date(0),
+        }
+      : undefined,
+  } as Registration & { id: string };
 }
 
 function convertTimestamps(data: Record<string, unknown> | null): Record<string, unknown> | null {
@@ -99,24 +128,14 @@ export async function getRegistrationsByUserId(uid: string): Promise<(Registrati
     const adminDb = getAdminDb();
     if (adminDb) {
       const snapshot = await adminDb.collection(COLLECTIONS.registrations).where("userId", "==", uid).get();
-      return snapshot.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          ...data,
-          createdAt: toDate(data.createdAt),
-          updatedAt: toDate(data.updatedAt),
-        } as Registration & { id: string };
-      });
+      return snapshot.docs.map((d) => normalizeRegistrationForClient(d.id, d.data() as Record<string, unknown>));
     }
     const ref = collection(db, COLLECTIONS.registrations);
     const q = query(ref, where("userId", "==", uid));
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => {
-      const data = d.data();
-      const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined;
-      const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : undefined;
-      return { id: d.id, ...data, createdAt, updatedAt } as Registration & { id: string };
+      const data = d.data() as Record<string, unknown>;
+      return normalizeRegistrationForClient(d.id, data);
     });
   } catch (err) {
     console.error("Error fetching registrations by user:", err);

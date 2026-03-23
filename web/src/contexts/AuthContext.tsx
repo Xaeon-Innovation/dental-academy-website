@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await firebaseSignOut(auth);
       setIsAdmin(false);
-      router.push("/");
+      router.replace("/");
       router.refresh();
     } catch (error) {
       console.error("Error signing out:", error);

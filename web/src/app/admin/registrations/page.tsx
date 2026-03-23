@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search, Eye, Trash2, Download } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { getAllStudents } from "@/lib/actions/student";
 import { getAllRegistrations, updateRegistrationStatus, deleteRegistration } from "@/lib/actions/registration";
 import { getCourses } from "@/lib/actions/course";
-import { computeRegistrationTotal } from "@/lib/pricing";
+import { computeRegistrationTotal, formatPrice } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration, RegistrationStatus } from "@/types/registration";
 import type { Course } from "@/types/course";
@@ -13,7 +14,21 @@ import RegistrationDetailsDialog from "@/components/admin/RegistrationDetailsDia
 
 type Tab = "users" | "enrollments";
 
+function formatAmountDue(amountDueCents: number | undefined, reg: Registration, course: Course | undefined): string {
+  if (amountDueCents != null && amountDueCents > 0) return formatPrice(amountDueCents / 100);
+  const total = computeRegistrationTotal(reg, course ?? undefined);
+  return total ? total.formattedTotal : "On request";
+}
+
+/** Admin sees "Confirmed" only when payment is paid; otherwise "Pending" (or "Pending payment") until then. */
+function effectiveStatusForAdmin(reg: Registration): RegistrationStatus | "pending" {
+  if (reg.paymentStatus === "paid") return reg.status;
+  if (reg.status === "confirmed") return "pending";
+  return reg.status;
+}
+
 export default function AdminRegistrationsPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("users");
   const [students, setStudents] = useState<(StudentProfile & { id: string })[]>([]);
   const [registrations, setRegistrations] = useState<(Registration & { id: string })[]>([]);
@@ -38,10 +53,9 @@ export default function AdminRegistrationsPage() {
     loadData();
   }, []);
 
-  async function loadData() {
+  async function loadData(): Promise<(Registration & { id: string })[] | undefined> {
     setLoading(true);
     try {
-      // Load students and registrations in parallel
       const [studentsData, registrationsData, coursesData] = await Promise.all([
         getAllStudents(),
         getAllRegistrations(),
@@ -51,14 +65,15 @@ export default function AdminRegistrationsPage() {
       setStudents(studentsData);
       setRegistrations(registrationsData);
 
-      // Create a map of courseId -> Course for quick lookup
       const coursesMap = new Map<string, Course>();
       coursesData.forEach((course) => {
         coursesMap.set(course.id, course);
       });
       setCourses(coursesMap);
+      return registrationsData;
     } catch (err) {
       console.error("Failed to load registrations data:", err);
+      return undefined;
     } finally {
       setLoading(false);
     }
@@ -135,7 +150,7 @@ export default function AdminRegistrationsPage() {
     const courseTitle = (id: string) => courses.get(id)?.title ?? id;
     const rows = registrations.map((reg) => {
       const course = courses.get(reg.courseId);
-      const totalResult = computeRegistrationTotal(reg, course ?? undefined);
+      const totalDisplay = formatAmountDue(reg.amountDueCents, reg, course);
       return {
         "Enrollment ID": reg.id,
         "Delegate Name": reg.name,
@@ -144,7 +159,9 @@ export default function AdminRegistrationsPage() {
         "Course": courseTitle(reg.courseId),
         "Status": reg.status,
         "Enrollment Date": reg.createdAt ? new Date(reg.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
-        "Total": totalResult ? totalResult.formattedTotal : "On request",
+        "Total": totalDisplay,
+        "Payment Status": reg.paymentStatus ?? "",
+        "Paid At": reg.paidAt ? new Date(reg.paidAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "",
         "Country": reg.country ?? "",
         "Instagram": reg.instagramHandle ?? "",
         "Current Role": reg.currentRole ?? "",
@@ -386,6 +403,9 @@ export default function AdminRegistrationsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
                     Total
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
+                    Payment
+                  </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/70">
                     Actions
                   </th>
@@ -394,11 +414,19 @@ export default function AdminRegistrationsPage() {
               <tbody className="divide-y divide-white/10">
                 {filteredRegistrations.map((registration) => {
                   const course = courses.get(registration.courseId);
-                  const totalResult = computeRegistrationTotal(registration, course ?? undefined);
+                  const totalDisplay = formatAmountDue(registration.amountDueCents, registration, course);
+                  const hasPendingRequest = registration.specialRequest?.status === "pending";
+                  const displayStatus = effectiveStatusForAdmin(registration);
+                  const canSetConfirmed = registration.paymentStatus === "paid";
                   return (
                     <tr key={registration.id} className="transition hover:bg-white/5">
                       <td className="px-4 py-4">
                         <p className="font-medium text-white">{registration.name}</p>
+                        {hasPendingRequest && (
+                          <span className="mt-1 inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400">
+                            Special request
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-sm text-white/70">{registration.email}</td>
                       <td className="px-4 py-4 text-sm text-white/70">
@@ -406,20 +434,26 @@ export default function AdminRegistrationsPage() {
                       </td>
                       <td className="px-4 py-4">
                         <select
-                          value={registration.status}
+                          value={displayStatus}
                           onChange={(e) =>
                             handleStatusChange(registration.id, e.target.value as RegistrationStatus)
                           }
                           disabled={updatingStatus === registration.id}
-                          title="Update enrollment status"
+                          title={!canSetConfirmed ? "Confirm only after payment" : "Update enrollment status"}
                           className={`rounded-full px-2 py-1 text-xs font-semibold capitalize border-0 cursor-pointer transition ${
                             updatingStatus === registration.id
                               ? "opacity-50 cursor-not-allowed"
                               : "hover:opacity-80"
-                          } ${getStatusBadgeColor(registration.status)}`}
+                          } ${getStatusBadgeColor(displayStatus)}`}
                         >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
+                          <option value="pending">
+                            {registration.status === "confirmed" && registration.paymentStatus !== "paid"
+                              ? "Pending payment"
+                              : "Pending"}
+                          </option>
+                          <option value="confirmed" disabled={!canSetConfirmed}>
+                            Confirmed
+                          </option>
                           <option value="cancelled">Cancelled</option>
                           <option value="completed">Completed</option>
                         </select>
@@ -428,7 +462,19 @@ export default function AdminRegistrationsPage() {
                         {formatDate(registration.createdAt)}
                       </td>
                       <td className="px-4 py-4 text-sm text-white/70">
-                        {totalResult ? totalResult.formattedTotal : "On request"}
+                        {totalDisplay}
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        {registration.paymentStatus === "paid" && (
+                          <span className="text-green-400">Paid</span>
+                        )}
+                        {registration.paymentStatus === "unpaid" && (
+                          <span className="text-white/60">Unpaid</span>
+                        )}
+                        {registration.paymentStatus === "failed" && (
+                          <span className="text-red-400">Failed</span>
+                        )}
+                        {!registration.paymentStatus && <span className="text-white/50">—</span>}
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -472,9 +518,19 @@ export default function AdminRegistrationsPage() {
         registration={detailsDialog.registration}
         course={detailsDialog.course}
         onClose={() => setDetailsDialog({ open: false, type: "student" })}
-        onStatusUpdate={() => {
-          loadData();
+        onStatusUpdate={async () => {
+          const regs = await loadData();
+          setDetailsDialog((prev) => {
+            if (!prev.registration?.id || !regs) return prev;
+            const updated = regs.find((r) => r.id === prev.registration!.id);
+            return updated ? { ...prev, registration: updated } : prev;
+          });
         }}
+        onFeesSet={() => {
+          setDetailsDialog({ open: false, type: "student" });
+          setActiveTab("enrollments");
+        }}
+        getToken={user ? async () => (await user.getIdToken()) ?? "" : undefined}
       />
     </div>
   );
