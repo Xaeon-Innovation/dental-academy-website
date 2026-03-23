@@ -17,6 +17,16 @@ export interface HomeSettings {
   ctaTitle?: string;
   ctaBody?: string;
   ctaBackgroundImageUrl?: string;
+  /**
+   * Home page course track card image (iPlace // iRestore).
+   * Prefer a Vercel Blob URL in production (upload via Admin → Home).
+   */
+  courseTrackIplaceImageUrl?: string;
+  /**
+   * Home page course track card image (Full Arch Intensive).
+   * Prefer a Vercel Blob URL in production.
+   */
+  courseTrackFullArchImageUrl?: string;
   /** Video testimonials shown on the home page (uploaded via admin). */
   videoTestimonials?: VideoTestimonialItem[];
 }

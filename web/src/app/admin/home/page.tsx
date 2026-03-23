@@ -6,7 +6,11 @@ import type { HomeSettings, VideoTestimonialItem } from "@/types/settings";
 import type { Testimonial } from "@/types/testimonial";
 import type { Course } from "@/types/course";
 import { getHomeSettings, updateHomeSettings } from "@/lib/actions/settings";
-import { uploadHomeImage, uploadVideoTestimonialPoster } from "@/lib/actions/upload";
+import {
+  uploadHomeImage,
+  uploadCourseLayoutImage,
+  uploadVideoTestimonialPoster,
+} from "@/lib/actions/upload";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   getAllTestimonials,
@@ -48,13 +52,21 @@ export default function AdminHomeManagementPage() {
     ctaTitle: "",
     ctaBody: "",
     ctaBackgroundImageUrl: "",
+    courseTrackIplaceImageUrl: "",
+    courseTrackFullArchImageUrl: "",
   });
   const [philosophyImagePreview, setPhilosophyImagePreview] = useState<string | null>(null);
   const [ctaImagePreview, setCtaImagePreview] = useState<string | null>(null);
+  const [iplaceTrackPreview, setIplaceTrackPreview] = useState<string | null>(null);
+  const [fullArchTrackPreview, setFullArchTrackPreview] = useState<string | null>(null);
   const [uploadingPhilosophy, startUploadingPhilosophy] = useTransition();
   const [uploadingCta, startUploadingCta] = useTransition();
+  const [uploadingIplaceTrack, startUploadingIplaceTrack] = useTransition();
+  const [uploadingFullArchTrack, startUploadingFullArchTrack] = useTransition();
   const philosophyInputRef = useRef<HTMLInputElement | null>(null);
   const ctaInputRef = useRef<HTMLInputElement | null>(null);
+  const iplaceTrackInputRef = useRef<HTMLInputElement | null>(null);
+  const fullArchTrackInputRef = useRef<HTMLInputElement | null>(null);
 
   const [testimonials, setTestimonials] = useState<(Testimonial & { id: string })[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -100,11 +112,15 @@ export default function AdminHomeManagementPage() {
           ctaTitle: settings?.ctaTitle ?? "",
           ctaBody: settings?.ctaBody ?? "",
           ctaBackgroundImageUrl: settings?.ctaBackgroundImageUrl ?? "",
+          courseTrackIplaceImageUrl: settings?.courseTrackIplaceImageUrl ?? "",
+          courseTrackFullArchImageUrl: settings?.courseTrackFullArchImageUrl ?? "",
           videoTestimonials: settings?.videoTestimonials ?? [],
         };
         setHome(next);
         setPhilosophyImagePreview(next.philosophyImageUrl || null);
         setCtaImagePreview(next.ctaBackgroundImageUrl || null);
+        setIplaceTrackPreview(next.courseTrackIplaceImageUrl || null);
+        setFullArchTrackPreview(next.courseTrackFullArchImageUrl || null);
         setVideoTestimonials(next.videoTestimonials ?? []);
         setStatus("idle");
       } catch (err) {
@@ -215,6 +231,8 @@ export default function AdminHomeManagementPage() {
         home.ctaBody?.trim() ||
         "Join the Academy and build precision-driven implant skills with iPlace and iRestore.",
       ctaBackgroundImageUrl: home.ctaBackgroundImageUrl?.trim() || "",
+      courseTrackIplaceImageUrl: home.courseTrackIplaceImageUrl?.trim() || "",
+      courseTrackFullArchImageUrl: home.courseTrackFullArchImageUrl?.trim() || "",
     };
 
     try {
@@ -234,7 +252,7 @@ export default function AdminHomeManagementPage() {
 
   function handleImageChange(
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "philosophy" | "cta"
+    type: "philosophy" | "cta" | "iplaceTrack" | "fullArchTrack"
   ) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -244,29 +262,42 @@ export default function AdminHomeManagementPage() {
       return;
     }
 
-    const preset = type === "philosophy" ? "homeHero" : "homeCta";
+    const preset =
+      type === "philosophy" ? "homeHero" : "homeCta";
 
     const uploadFn = async () => {
       setError(null);
       try {
         const compressedFile = await compressImageFile(file, { preset });
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (type === "philosophy") {
-            setPhilosophyImagePreview(reader.result as string);
-          } else {
-            setCtaImagePreview(reader.result as string);
-          }
-        };
-        reader.readAsDataURL(compressedFile);
+        if (type === "philosophy" || type === "cta") {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            if (type === "philosophy") {
+              setPhilosophyImagePreview(dataUrl);
+            } else {
+              setCtaImagePreview(dataUrl);
+            }
+          };
+          reader.readAsDataURL(compressedFile);
+        }
 
-        const result = await uploadHomeImage(compressedFile);
+        const isCourseTrack = type === "iplaceTrack" || type === "fullArchTrack";
+        const result = isCourseTrack
+          ? await uploadCourseLayoutImage(compressedFile)
+          : await uploadHomeImage(compressedFile);
         if (result.success) {
           if (type === "philosophy") {
             updateField("philosophyImageUrl", result.url);
-          } else {
+          } else if (type === "cta") {
             updateField("ctaBackgroundImageUrl", result.url);
+          } else if (type === "iplaceTrack") {
+            updateField("courseTrackIplaceImageUrl", result.url);
+            setIplaceTrackPreview(result.url);
+          } else {
+            updateField("courseTrackFullArchImageUrl", result.url);
+            setFullArchTrackPreview(result.url);
           }
         } else {
           setError(result.error || "Failed to upload image.");
@@ -279,23 +310,39 @@ export default function AdminHomeManagementPage() {
 
     if (type === "philosophy") {
       startUploadingPhilosophy(uploadFn);
-    } else {
+    } else if (type === "cta") {
       startUploadingCta(uploadFn);
+    } else if (type === "iplaceTrack") {
+      startUploadingIplaceTrack(uploadFn);
+    } else {
+      startUploadingFullArchTrack(uploadFn);
     }
   }
 
-  function clearImage(type: "philosophy" | "cta") {
+  function clearImage(type: "philosophy" | "cta" | "iplaceTrack" | "fullArchTrack") {
     if (type === "philosophy") {
       setPhilosophyImagePreview(null);
       updateField("philosophyImageUrl", "");
       if (philosophyInputRef.current) {
         philosophyInputRef.current.value = "";
       }
-    } else {
+    } else if (type === "cta") {
       setCtaImagePreview(null);
       updateField("ctaBackgroundImageUrl", "");
       if (ctaInputRef.current) {
         ctaInputRef.current.value = "";
+      }
+    } else if (type === "iplaceTrack") {
+      setIplaceTrackPreview(null);
+      updateField("courseTrackIplaceImageUrl", "");
+      if (iplaceTrackInputRef.current) {
+        iplaceTrackInputRef.current.value = "";
+      }
+    } else {
+      setFullArchTrackPreview(null);
+      updateField("courseTrackFullArchImageUrl", "");
+      if (fullArchTrackInputRef.current) {
+        fullArchTrackInputRef.current.value = "";
       }
     }
   }
@@ -1265,6 +1312,123 @@ export default function AdminHomeManagementPage() {
                 Optional decorative image behind the CTA content. Leave empty to use a plain
                 background.
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Home page course track cards */}
+        <section className="rounded-lg border border-white/10 bg-black/40 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-[var(--font-playfair)] text-xl tracking-tight">
+                Course track card images
+              </h2>
+              <p className="mt-1 text-xs text-white/60">
+                Images at the top of the two course track cards on the home page. On Vercel, uploads
+                go to Blob (same as course thumbnails). Save after uploading to persist the URLs in
+                Firestore.
+              </p>
+            </div>
+            <span className="text-xs uppercase tracking-[0.18em] text-accentGold/80">
+              Home tracks
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-white/80">iPlace // iRestore</p>
+              {iplaceTrackPreview && (
+                <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                  <img
+                    src={iplaceTrackPreview}
+                    alt="iPlace track preview"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => clearImage("iplaceTrack")}
+                    className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white hover:bg-black"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={iplaceTrackInputRef}
+                id="courseTrackIplaceImage"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageChange(e, "iplaceTrack")}
+                disabled={loading || saving || uploadingIplaceTrack}
+              />
+              <label
+                htmlFor="courseTrackIplaceImage"
+                className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white transition hover:bg-white/10 ${
+                  loading || saving || uploadingIplaceTrack ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {uploadingIplaceTrack ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3 w-3" />
+                    {iplaceTrackPreview ? "Change image" : "Upload image"}
+                  </>
+                )}
+              </label>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-white/80">Full Arch Intensive</p>
+              {fullArchTrackPreview && (
+                <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                  <img
+                    src={fullArchTrackPreview}
+                    alt="Full Arch track preview"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => clearImage("fullArchTrack")}
+                    className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white hover:bg-black"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={fullArchTrackInputRef}
+                id="courseTrackFullArchImage"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageChange(e, "fullArchTrack")}
+                disabled={loading || saving || uploadingFullArchTrack}
+              />
+              <label
+                htmlFor="courseTrackFullArchImage"
+                className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white transition hover:bg-white/10 ${
+                  loading || saving || uploadingFullArchTrack ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {uploadingFullArchTrack ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3 w-3" />
+                    {fullArchTrackPreview ? "Change image" : "Upload image"}
+                  </>
+                )}
+              </label>
             </div>
           </div>
         </section>

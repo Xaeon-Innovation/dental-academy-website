@@ -100,24 +100,28 @@ export default async function HomePage() {
             </p>
           </FadeIn>
           <div className="mt-12 flex flex-wrap justify-center gap-6">
-            {[
-              {
-                title: "iPlace // iRestore",
-                body: "Single and Multiple implants intensive course. 60 Hrs of CPD.",
-                provider: "Course Provider: Kaleidoscope Dental Academy",
-                slug: "iplace-irestore",
-                imageSrc:
-                  "/images/courses/Screenshot%202026-03-23%20055528.png",
-              },
-              {
-                title: "FULL ARCH INTENSIVE",
-                body: "(All-on-X). 46hrs of CPD.",
-                provider: "Course Provider: Kaleidoscope Dental Academy",
-                slug: "full-arch-intensive",
-                imageSrc:
-                  "/images/courses/Screenshot%202026-03-23%20055640.png",
-              },
-            ].map((track, index) => (
+            {(
+              [
+                {
+                  title: "iPlace // iRestore",
+                  body: "Single and Multiple implants intensive course. 60 Hrs of CPD.",
+                  provider: "Course Provider: Kaleidoscope Dental Academy",
+                  slug: "iplace-irestore",
+                  imageSrc:
+                    home.courseTrackIplaceImageUrl?.trim() ||
+                    "/images/courses/iplace-irestore-home-track.png",
+                },
+                {
+                  title: "FULL ARCH INTENSIVE",
+                  body: "(All-on-X). 46hrs of CPD.",
+                  provider: "Course Provider: Kaleidoscope Dental Academy",
+                  slug: "full-arch-intensive",
+                  imageSrc:
+                    home.courseTrackFullArchImageUrl?.trim() ||
+                    "/images/courses/full-arch-intensive-home-track.png",
+                },
+              ] as const
+            ).map((track, index) => (
               <FadeIn
                 key={track.title}
                 delay={0.08 + index * 0.1}
