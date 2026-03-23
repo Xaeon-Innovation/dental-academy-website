@@ -146,9 +146,24 @@ export default async function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/5">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-5 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-white/45">
-            &copy; {year} Kaleidoscope Dental Academy. All rights reserved.
-          </p>
+          <div className="flex flex-col items-center gap-2 sm:items-start">
+            <p className="text-xs text-white/45">
+              &copy; {year} Kaleidoscope Dental Academy. All rights reserved.
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-white/40">
+                Website developed by
+              </span>
+              <Image
+                src="/images/logo/devlogo.png"
+                alt="Website developed by XAEON"
+                width={84}
+                height={24}
+                className="h-5 w-auto object-contain"
+                unoptimized
+              />
+            </div>
+          </div>
           <p className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-white/35">
             Precision Implant Education
           </p>
