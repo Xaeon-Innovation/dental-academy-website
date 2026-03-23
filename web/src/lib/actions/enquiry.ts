@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -300,6 +301,37 @@ export async function updateEnquiry(
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update enquiry";
+    return { success: false, error: message };
+  }
+}
+
+export async function deleteEnquiry(
+  enquiryId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const id = enquiryId.trim();
+  if (!id) return { success: false, error: "Enquiry ID is required." };
+  try {
+    const enquiryRef = doc(db, COLLECTIONS.enquiries, id);
+    const currentSnap = await getDoc(enquiryRef);
+    if (!currentSnap.exists()) {
+      return { success: false, error: "Enquiry not found." };
+    }
+    const current = normalizeEnquiry(
+      currentSnap.id,
+      currentSnap.data() as Record<string, unknown>
+    );
+    if (current.status === "converted" || current.linkedRegistrationId) {
+      return {
+        success: false,
+        error:
+          "This enquiry is linked to an enrollment/payment record and cannot be deleted.",
+      };
+    }
+    await deleteDoc(enquiryRef);
+    revalidatePath("/admin/enquiries");
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to delete enquiry";
     return { success: false, error: message };
   }
 }

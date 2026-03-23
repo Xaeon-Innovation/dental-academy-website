@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Search } from "lucide-react";
+import { Check, Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   activateEnquiryAndEnroll,
+  deleteEnquiry,
   getAllEnquiries,
   updateEnquiry,
 } from "@/lib/actions/enquiry";
@@ -91,6 +92,25 @@ export default function AdminEnquiriesPage() {
     }
     setSelected(null);
     setSelectedCourseId("");
+    await load();
+  }
+
+  async function handleDelete(enquiry: Enquiry) {
+    if (
+      !confirm(
+        `Delete enquiry from ${enquiry.fullName}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const result = await deleteEnquiry(enquiry.id);
+    setSaving(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
     await load();
   }
 
@@ -183,15 +203,26 @@ export default function AdminEnquiriesPage() {
                     </select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setSelected(e)}
-                      disabled={e.status === "converted"}
-                      className="inline-flex items-center gap-1 rounded border border-accentGold/40 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-accentGold hover:bg-accentGold/10 disabled:cursor-not-allowed disabled:border-white/15 disabled:text-white/40 disabled:hover:bg-transparent"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      {e.status === "converted" ? "Converted" : "Activate & Enroll"}
-                    </button>
+                    <div className="inline-flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(e)}
+                        disabled={saving || e.status === "converted" || Boolean(e.linkedRegistrationId)}
+                        className="inline-flex items-center gap-1 rounded border border-red-400/30 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-red-300 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:border-white/15 disabled:text-white/40 disabled:hover:bg-transparent"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(e)}
+                        disabled={e.status === "converted"}
+                        className="inline-flex items-center gap-1 rounded border border-accentGold/40 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-accentGold hover:bg-accentGold/10 disabled:cursor-not-allowed disabled:border-white/15 disabled:text-white/40 disabled:hover:bg-transparent"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        {e.status === "converted" ? "Converted" : "Activate & Enroll"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
