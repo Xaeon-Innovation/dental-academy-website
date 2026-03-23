@@ -270,7 +270,6 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
             <CourseEnquiryForm
               courseId={enquiryCourse.id}
               courseSlug={enquiryCourse.slug}
-              title="Quick course enquiry"
               className="rounded-xl border border-accentGold/20 bg-accentGold/5 p-4"
             />
           </div>

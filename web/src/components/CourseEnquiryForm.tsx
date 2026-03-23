@@ -6,11 +6,10 @@ import { submitEnquiry } from "@/lib/actions/enquiry";
 type CourseEnquiryFormProps = {
   courseId: string;
   courseSlug: string;
-  title?: string;
   className?: string;
 };
 
-export function CourseEnquiryForm({ courseId, courseSlug, title, className }: CourseEnquiryFormProps) {
+export function CourseEnquiryForm({ courseId, courseSlug, className }: CourseEnquiryFormProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -45,9 +44,6 @@ export function CourseEnquiryForm({ courseId, courseSlug, title, className }: Co
 
   return (
     <div className={className ?? "mt-5 rounded-xl border border-accentGold/20 bg-accentGold/5 p-4"}>
-      <h4 className="text-sm font-semibold text-white">
-        {title || "Not ready to pay yet? Enquire first"}
-      </h4>
       <p className="mt-1 text-xs text-white/70">
         Send your details and our team will contact you with course info.
       </p>
