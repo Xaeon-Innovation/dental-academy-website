@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +46,37 @@ export default function PortalDashboardPage() {
     getRegistrationsByUserId(user.uid).then(setRegistrations);
   }, [user]);
 
+  /** Stripe webhooks can lag or be misconfigured; sync PaymentIntent → Firestore after pay. */
+  const syncPaymentStatus = useCallback(
+    async (registrationId: string) => {
+      if (!user) return;
+      const token = await user.getIdToken();
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const res = await fetch("/api/payments/sync-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ registrationId }),
+          });
+          const data = (await res.json()) as {
+            success?: boolean;
+            status?: string;
+          };
+          if (data.success && data.status === "succeeded") break;
+          if (data.success && data.status === "failed") break;
+        } catch {
+          /* retry */
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      refetchRegistrations();
+    },
+    [user, refetchRegistrations]
+  );
+
   useEffect(() => {
     if (!user) return;
     Promise.all([
@@ -60,16 +91,45 @@ export default function PortalDashboardPage() {
     });
   }, [user]);
 
-  // Refetch when returning from Stripe redirect (e.g. 3DS) with ?paid=registrationId
+  // After Stripe redirect (?paid=), sync PI status to Firestore (webhook may not have run yet)
   useEffect(() => {
     if (typeof window === "undefined" || !user) return;
     const params = new URLSearchParams(window.location.search);
     const paidId = params.get("paid");
-    if (paidId) {
-      refetchRegistrations();
+    if (!paidId) return;
+    void (async () => {
+      await syncPaymentStatus(paidId);
       window.history.replaceState({}, "", "/portal/dashboard");
-    }
-  }, [user, refetchRegistrations]);
+    })();
+  }, [user, syncPaymentStatus]);
+
+  /** If webhook never ran, a succeeded PI can leave Firestore stuck as unpaid — sync once per such enrollment. */
+  const lastPendingPiSyncKey = useRef("");
+  const pendingPiSyncKey =
+    !loading && user
+      ? registrations
+          .filter(
+            (r) =>
+              Boolean(r.stripePaymentIntentId) &&
+              r.paymentStatus !== "paid" &&
+              r.paymentStatus !== "failed" &&
+              r.paymentStatus !== "refunded"
+          )
+          .map((r) => r.id)
+          .sort()
+          .join(",")
+      : "";
+
+  useEffect(() => {
+    if (!pendingPiSyncKey || pendingPiSyncKey === lastPendingPiSyncKey.current) return;
+    lastPendingPiSyncKey.current = pendingPiSyncKey;
+    const ids = pendingPiSyncKey.split(",").filter(Boolean);
+    void (async () => {
+      for (const id of ids) {
+        await syncPaymentStatus(id);
+      }
+    })();
+  }, [pendingPiSyncKey, syncPaymentStatus]);
 
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
@@ -357,9 +417,10 @@ export default function PortalDashboardPage() {
                 <StripePaymentForm
                   registrationId={paymentRegistrationId}
                   getToken={async () => (await user.getIdToken()) ?? ""}
-                  onSuccess={() => {
+                  onSuccess={async () => {
+                    const id = paymentRegistrationId;
                     setPaymentRegistrationId(null);
-                    refetchRegistrations();
+                    if (id) await syncPaymentStatus(id);
                   }}
                   onClose={() => setPaymentRegistrationId(null)}
                 />

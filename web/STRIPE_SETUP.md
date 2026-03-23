@@ -84,6 +84,14 @@ For your **live** site (e.g. on Vercel):
 3. **Events:** `payment_intent.succeeded`, `payment_intent.payment_failed`
 4. Open the endpoint → **Reveal signing secret** → set as `STRIPE_WEBHOOK_SECRET` in **Vercel** project environment variables (Production).
 
+### Payment succeeded in Stripe but the portal still says “Pending payment”
+
+That usually means **`payment_intent.succeeded` never updated Firestore** (wrong URL, wrong `whsec_`, missing env on Vercel, or Firebase Admin failing in that environment).
+
+The app also calls **`POST /api/payments/sync-status`** when you return to **`/portal/dashboard?paid=<registrationId>`** (after pay), after paying in the modal, and once when the dashboard loads for any enrollment that has a `stripePaymentIntentId` but is not yet `paid`. That re-reads the PaymentIntent from Stripe and updates the registration like the webhook.
+
+**Fix production webhooks:** confirm the Dashboard endpoint URL matches your deployed domain and `STRIPE_WEBHOOK_SECRET` is the signing secret for **that** endpoint (not the CLI `whsec_` from local testing).
+
 ---
 
 ## Switching between test and live
