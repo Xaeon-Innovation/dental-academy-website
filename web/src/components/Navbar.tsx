@@ -53,18 +53,28 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-black/40 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:py-4">
-        <Link href="/" className="flex items-center">
+      {/* Mobile: logo left, actions right. md+: 4 columns — logo | nav (2 cols, centered) | CTA */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 py-4 pl-2 pr-4 md:grid md:grid-cols-4 md:items-center md:justify-items-stretch md:gap-4 md:py-5 md:pl-3 md:pr-6">
+        <Link
+          href="/"
+          className="flex min-w-0 shrink-0 items-center justify-self-start md:col-span-1 -ml-1 md:-ml-2"
+        >
           <Image
             src="/images/logo/logoTransparent.png"
             alt="Kaleidoscope Dental Academy"
-            width={120}
-            height={42}
-            className="h-auto w-auto object-contain"
+            width={360}
+            height={126}
+            className="h-10 w-auto object-contain object-left sm:h-11 md:h-12"
+            sizes="(max-width: 768px) 220px, 260px"
+            quality={100}
             priority
+            unoptimized
           />
         </Link>
-        <nav className="hidden gap-1 text-sm font-medium md:flex">
+        <nav
+          className="hidden gap-1 text-sm font-medium md:col-span-2 md:flex md:w-full md:flex-wrap md:items-center md:justify-center"
+          aria-label="Main navigation"
+        >
           {navLinks.map((link) => {
             const isHome = link.href === "/";
             const isActive = isHome
@@ -89,11 +99,11 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
             );
           })}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 justify-self-end md:col-span-1">
           <button
             type="button"
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition hover:bg-white/10 hover:text-white md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-white/80 transition hover:bg-white/10 hover:text-white md:hidden"
             {...(mobileMenuOpen ? { "aria-expanded": "true" } : { "aria-expanded": "false" })}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
@@ -103,7 +113,7 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
             isAdmin ? (
               <Link
                 href="/admin"
-                className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
+                className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
                 title={user.email ?? undefined}
               >
                 {displayLabel}
@@ -111,7 +121,7 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
             ) : (
               <Link
                 href="/portal/dashboard"
-                className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
+                className="rounded-full border border-white/20 px-4 py-2 text-xs font-medium text-white/90 transition hover:border-accentGold/50 hover:text-white"
                 title={user.email ?? undefined}
               >
                 {displayLabel}
@@ -120,7 +130,7 @@ export default function Navbar({ showBlogInNav = true }: { showBlogInNav?: boole
           ) : (
             <Link
               href={enrollHref}
-              className="rounded-full border border-accentGold bg-accentGold px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
+              className="rounded-full border border-accentGold bg-accentGold px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-background transition hover:border-accentGold/90 hover:bg-accentGold/90"
             >
               Enroll
             </Link>
