@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   Target,
@@ -13,8 +12,14 @@ import { Globe } from "@/components/globe";
 import { AboutHeroBubbleBackground } from "@/components/AboutHeroBubbleBackground";
 import { AboutHeroFlipCard } from "@/components/AboutHeroFlipCard";
 import { TextReveal } from "@/components/TextReveal";
+import { FadeIn } from "@/components/FadeIn";
+import { InstructorCardsInteractive } from "@/components/InstructorCardsInteractive";
 import type { Metadata } from "next";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
+import {
+  AboutStatistics,
+  type AboutStatItem,
+} from "@/components/AboutStatistics";
 
 export const metadata: Metadata = {
   title: "About | Kaleidoscope Dental Academy",
@@ -74,14 +79,15 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { value: "1500+", label: "Graduates worldwide" },
-  { value: "20+", label: "Years of excellence" },
-  { value: "98%", label: "Career placement" },
+const ABOUT_STATS: AboutStatItem[] = [
+  { value: 1500, suffix: "+", label: "Graduates worldwide", delay: 0 },
+  { value: 20, suffix: "+", label: "Years of excellence", delay: 0.12 },
+  { value: 98, suffix: "%", label: "Career placement", delay: 0.24 },
 ];
 
 export default async function AboutPage() {
-  const instructors = await getInstructorsForPage("about");
+  // Same roster + card photos as the home page instructors section
+  const instructors = await getInstructorsForPage("home");
 
   return (
     <div className="bg-background text-white">
@@ -238,77 +244,32 @@ export default async function AboutPage() {
         className="border-t border-white/5 px-4 py-16 md:py-20"
         aria-label="Academy statistics"
       >
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 md:flex-row md:justify-between md:gap-8">
-          {STATS.map(({ value, label }) => (
-            <div key={label} className="text-center md:text-left">
-              <div className="h-px w-12 bg-accentGold" aria-hidden />
-              <p className="mt-3 font-[var(--font-playfair)] text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                {value}
-              </p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.15em] text-white/50">
-                {label}
-              </p>
-            </div>
-          ))}
-        </div>
+        <AboutStatistics stats={ABOUT_STATS} />
       </section>
 
-      {/* Faculty */}
+      {/* Faculty — same cards & images as home page */}
       <section
         className="border-t border-white/5 bg-white/[0.02] px-4 py-16 md:py-20"
         aria-labelledby="faculty-heading"
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl text-center">
           <h2
             id="faculty-heading"
-            className="text-center font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
+            className="font-[var(--font-playfair)] text-2xl font-semibold tracking-tight md:text-3xl"
           >
             <TextReveal>Meet our instructors</TextReveal>
           </h2>
-          <div className="mt-10 flex flex-wrap justify-center gap-8 md:gap-12">
-            {instructors.length === 0 ? (
-              <p className="w-full text-center text-sm text-white/50">
-                No instructors available yet.
-              </p>
-            ) : (
-              instructors.map((instructor) => {
-                const imageUrl = instructor.imageUrl || "/images/instructors/placeholder.png";
-
-                return (
-                  <div
-                    key={instructor.id}
-                    className="flex flex-col items-center transition hover:opacity-90"
-                  >
-                    <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border-2 border-white/10 bg-white/5 md:h-32 md:w-32">
-                      <Image
-                        src={imageUrl}
-                        alt={instructor.name}
-                        fill
-                        className="object-cover"
-                        sizes="128px"
-                      />
-                    </div>
-                    <div className="mt-3 flex min-h-[4.5rem] w-full max-w-[10rem] flex-col items-center justify-start text-center">
-                      <p className="text-sm font-medium text-white">
-                        {instructor.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-white/60">
-                        {instructor.credentials}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div className="mt-12 flex flex-wrap justify-center gap-6">
+            <InstructorCardsInteractive instructors={instructors} />
           </div>
-          <div className="mt-8 text-center">
+          <FadeIn className="mt-10 block text-center">
             <Link
               href="/courses"
-              className="text-xs font-semibold uppercase tracking-[0.18em] text-accentGold transition hover:text-accentGold/80"
+              className="inline-block text-xs font-semibold uppercase tracking-[0.18em] text-accentGold transition hover:text-accentGold/80"
             >
-              View full profiles on courses →
+              See instructors on courses →
             </Link>
-          </div>
+          </FadeIn>
         </div>
       </section>
 

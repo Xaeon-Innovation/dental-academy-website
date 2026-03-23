@@ -5,6 +5,7 @@ import ScrollIndicator from "@/components/ScrollIndicator";
 import { FadeIn } from "@/components/FadeIn";
 import Testimonials from "@/components/Testimonials";
 import { VideoTestimonialsSection } from "@/components/VideoTestimonialsSection";
+import { InstructorCardsInteractive } from "@/components/InstructorCardsInteractive";
 import { HomeCtaButtons } from "@/components/HomeCtaButtons";
 import { TextReveal } from "@/components/TextReveal";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
@@ -185,58 +186,7 @@ export default async function HomePage() {
             </p>
           </FadeIn>
           <div className="mt-12 flex flex-wrap justify-center gap-6">
-            {instructors.length === 0 ? (
-              <FadeIn className="w-full">
-                <p className="w-full text-center text-sm text-white/50">
-                  No instructors available yet.
-                </p>
-              </FadeIn>
-            ) : (
-              instructors.map((instructor, index) => {
-                // Truncate bio to ~120 characters for card display
-                const bioPreview = instructor.bio
-                  ? instructor.bio.length > 120
-                    ? instructor.bio.substring(0, 120).trim() + "..."
-                    : instructor.bio
-                  : "";
-                const imageUrl = instructor.imageUrl || "/images/instructors/placeholder.png";
-
-                return (
-                  <FadeIn
-                    key={instructor.id}
-                    delay={0.06 * index}
-                    className="w-full max-w-[280px] sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
-                  >
-                  <article
-                    className="group relative w-full overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04]"
-                  >
-                    <div className="aspect-[3/4] overflow-hidden rounded-t-2xl bg-white/5">
-                      <Image
-                        src={imageUrl}
-                        alt={instructor.name}
-                        width={320}
-                        height={427}
-                        className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-semibold tracking-tight text-white">
-                        {instructor.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-accentGold/90">
-                        {instructor.credentials}
-                      </p>
-                      {bioPreview && (
-                        <p className="mt-2 text-sm leading-snug text-white/60">
-                          {bioPreview}
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                  </FadeIn>
-                );
-              })
-            )}
+            <InstructorCardsInteractive instructors={instructors} />
           </div>
           <FadeIn className="mt-10 block text-center">
             <Link
