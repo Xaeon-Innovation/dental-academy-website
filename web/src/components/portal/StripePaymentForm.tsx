@@ -27,17 +27,19 @@ function PaymentFormInner({ clientSecret, registrationId, onSuccess, onError, on
       if (!stripe || !elements) return;
       setLoading(true);
       try {
+        // Required before confirmPayment when using Payment Element (deferred / submit flow)
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+          onError(submitError.message ?? "Check your payment details");
+          setLoading(false);
+          return;
+        }
+
         const { error } = await stripe.confirmPayment({
           elements,
           clientSecret,
           confirmParams: {
             return_url: `${window.location.origin}/portal/dashboard?paid=${registrationId}`,
-            payment_method_data: {
-              billing_details: {
-                name: undefined,
-                email: undefined,
-              },
-            },
           },
         });
         if (error) {
