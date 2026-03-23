@@ -76,6 +76,10 @@ export interface Registration {
   specialRequest?: SpecialRequest;
   /** Admin-set extra fees in smallest currency unit (e.g. pence). */
   extraFeesCents?: number;
+  /** Optional message from delegate at enrollment (minimal or full form). */
+  enrollmentNote?: string;
+  /** Created via course-page minimal flow; extended profile may still be incomplete. */
+  minimalEnrollment?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

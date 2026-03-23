@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import type { Course } from "@/types/course";
 import { EnrollButton } from "@/components/EnrollButton";
+import { FadeIn } from "@/components/FadeIn";
 import { SpotsLeft } from "@/components/SpotsLeft";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRegistrationsByUserId } from "@/lib/actions/student";
@@ -46,32 +47,42 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
   };
 
   return (
-    <div className="bg-background px-4 py-16 text-white md:py-20">
-      <div className="mx-auto max-w-4xl">
-        <header className="mb-10 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-            Courses
-          </p>
-          <h1 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-            Two intensive tracks. One academy.
-          </h1>
-          <p className="mt-2 text-sm text-white/70">
-            Course Provider: Kaleidoscope Dental Academy
-          </p>
-        </header>
+    <>
+      {/* Far right: only left 50% of goldsolid (200% width + bg-left); diameter sits on strip’s right edge */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-y-0 right-0 z-0 w-[min(70vw,520px)] max-w-[50vw] bg-[url('/images/logo/goldsolid.png')] bg-left bg-no-repeat bg-[length:200%_auto] opacity-[0.08] [mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] sm:w-[min(74vw,760px)] sm:max-w-none sm:opacity-[0.1] md:w-[min(78vw,920px)] md:opacity-[0.12]"
+      />
+      <div className="relative z-10 min-h-[60vh] bg-transparent px-4 py-16 text-white md:py-20">
+        <div className="mx-auto max-w-4xl">
+        <FadeIn>
+          <header className="mb-10 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+              Courses
+            </p>
+            <h1 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+              Two intensive tracks. One academy.
+            </h1>
+            <p className="mt-2 text-sm text-white/70">
+              Course Provider: Kaleidoscope Dental Academy
+            </p>
+          </header>
+        </FadeIn>
         <div className="space-y-6">
           {courses.length === 0 ? (
-            <div className="rounded-lg border border-white/10 bg-black/40 px-6 py-12 text-center">
-              <p className="text-white/70">No courses available at this time.</p>
-            </div>
+            <FadeIn>
+              <div className="rounded-lg border border-white/10 bg-black/40 px-6 py-12 text-center">
+                <p className="text-white/70">No courses available at this time.</p>
+              </div>
+            </FadeIn>
           ) : (
-            courses.map((course) => {
+            courses.map((course, index) => {
               const isExpanded = expandedCard === course.slug;
               const isEnrolled = user && enrolledCourseIds.includes(course.id);
               const hasLayoutImage = Boolean(course.layoutImageUrl?.trim());
               return (
+                <FadeIn key={course.slug} delay={0.08 * index}>
                 <article
-                  key={course.slug}
                   className={`group relative overflow-hidden rounded-3xl border transition-all duration-500 ease-in-out ${
                     hasLayoutImage
                       ? isExpanded
@@ -189,11 +200,13 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                     </button>
                   </div>
                 </article>
+                </FadeIn>
               );
             })
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

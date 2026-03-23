@@ -12,7 +12,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { getCourseBySlug, getCourses } from "@/lib/actions/course";
-import { RegisterNowButton } from "@/components/RegisterNowButton";
+import { SecureYourSpotCTA } from "@/components/SecureYourSpotCTA";
 import { SpotsLeft } from "@/components/SpotsLeft";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -314,8 +314,8 @@ export default async function CourseDetailPage({ params }: Props) {
             ) : null}
           </div>
 
-          {/* Sidebar — Secure Your Spot */}
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          {/* Sidebar — Secure Your Spot (scrolls inside viewport on lg+ so the form stays reachable without scrolling the whole page) */}
+          <aside className="scrollbar-brand lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-y-contain lg:self-start lg:[scrollbar-gutter:stable]">
             <div className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.06] to-black/40 shadow-xl">
               <div className="rounded-t-2xl border-b border-white/5 bg-accentGold/10 px-5 py-4">
                 <h3 className="font-semibold text-white">Secure Your Spot</h3>
@@ -389,7 +389,7 @@ export default async function CourseDetailPage({ params }: Props) {
                     </p>
                   </>
                 )}
-                <RegisterNowButton courseSlug={slug} courseId={course.id} />
+                <SecureYourSpotCTA courseSlug={slug} courseId={course.id} />
                 <p className="mt-4 text-center text-xs text-white/50">
                   By registering, you agree to our{" "}
                   <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">

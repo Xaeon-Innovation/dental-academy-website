@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile, updateStudentSavedForm } from "@/lib/actions/student";
+import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile } from "@/lib/actions/student";
 import { getCourses } from "@/lib/actions/course";
 import { computeRegistrationTotal, formatPrice, getBaseAmountCents, getRegistrationTotalBreakdown } from "@/lib/pricing";
 import { submitSpecialRequest } from "@/lib/actions/registration";
@@ -13,7 +13,6 @@ import type { Registration } from "@/types/registration";
 import type { Course } from "@/types/course";
 import StudentDashboardGuard from "./StudentDashboardGuard";
 import DashboardProfileForm from "./DashboardProfileForm";
-import DashboardSavedFormEditor from "./DashboardSavedFormEditor";
 import LoadingScreen from "@/components/LoadingScreen";
 import StripePaymentForm from "@/components/portal/StripePaymentForm";
 
@@ -142,15 +141,6 @@ export default function PortalDashboardPage() {
     return result;
   };
 
-  const handleSavedFormSave = async (snapshot: Parameters<typeof updateStudentSavedForm>[1]) => {
-    if (!user) return { success: false as const, error: "Not signed in" };
-    const result = await updateStudentSavedForm(user.uid, snapshot);
-    if (result.success) {
-      setProfile((prev) => (prev ? { ...prev, savedFormSnapshot: snapshot } : null));
-    }
-    return result;
-  };
-
   return (
     <StudentDashboardGuard>
       <div className="min-h-screen bg-background px-4 py-16 text-white md:py-20">
@@ -160,7 +150,7 @@ export default function PortalDashboardPage() {
               Delegate dashboard
             </h1>
             <p className="mt-2 text-sm text-white/70">
-              Your enrolled courses, profile, and saved enrollment info.
+              Your enrolled courses and account profile.
             </p>
             <div className="mt-4 flex flex-col gap-3">
               <Link
@@ -256,14 +246,6 @@ export default function PortalDashboardPage() {
                               )}
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
-                              {reg.status === "pending" && (
-                                <Link
-                                  href={`/portal/dashboard/enrollments/${reg.id}/edit`}
-                                  className="text-xs font-semibold uppercase tracking-wider text-accentGold hover:underline"
-                                >
-                                  Update enrollment
-                                </Link>
-                              )}
                               {reg.courseSlug && (
                                 <Link
                                   href={`/courses/${reg.courseSlug}`}
@@ -380,7 +362,10 @@ export default function PortalDashboardPage() {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+              <section
+                id="delegate-profile"
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 scroll-mt-24"
+              >
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
                   Profile
                 </h2>
@@ -388,24 +373,6 @@ export default function PortalDashboardPage() {
                   profile={profile}
                   email={user?.email ?? ""}
                   onSave={handleProfileSave}
-                />
-              </section>
-
-              <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
-                  Saved enrollment info
-                </h2>
-                <p className="mt-1 text-xs text-white/60">
-                  This info will prefill when you enroll in another course. Edit and save to update.
-                </p>
-                <DashboardSavedFormEditor
-                  savedFormSnapshot={profile?.savedFormSnapshot}
-                  profileFallback={{
-                    name: profile?.displayName,
-                    email: user?.email ?? undefined,
-                    phone: profile?.phone,
-                  }}
-                  onSave={handleSavedFormSave}
                 />
               </section>
             </div>

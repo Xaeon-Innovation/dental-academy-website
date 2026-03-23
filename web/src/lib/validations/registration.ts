@@ -36,6 +36,7 @@ export const registrationSchema = z
     preferredFormat: preferredFormatEnum.optional(),
     howDidYouHear: z.string().optional(),
     whatAttractedYou: z.string().optional(),
+    enrollmentNote: z.string().max(2000, "Message is too long").optional(),
     // Final
     contactByWhatsApp: z.boolean(),
     consentContact: z.boolean(),
@@ -52,5 +53,28 @@ export const registrationSchema = z
   });
 
 export type RegistrationFormData = z.infer<typeof registrationSchema>;
+
+/** Bare-minimum enrollment from course page (requires verified Firebase session via idToken). */
+export const minimalEnrollmentSchema = z
+  .object({
+    courseId: z.string().min(1, "Course is required"),
+    courseSlug: z.string().min(1, "Course slug is required"),
+    name: z.string().min(1, "Full name is required"),
+    phone: z.string().min(1, "Phone number is required"),
+    enrollmentNote: z.string().max(2000, "Message is too long").optional(),
+    consentContact: z.boolean(),
+    acceptedTerms: z.boolean(),
+    idToken: z.string().min(1, "You must be signed in to enroll"),
+  })
+  .refine((data) => data.consentContact === true, {
+    message: "You must agree to be contacted with further details.",
+    path: ["consentContact"],
+  })
+  .refine((data) => data.acceptedTerms === true, {
+    message: "You must accept the Terms and Conditions to proceed.",
+    path: ["acceptedTerms"],
+  });
+
+export type MinimalEnrollmentFormData = z.infer<typeof minimalEnrollmentSchema>;
 
 export const aspectsToDevelopOptions = ASPECTS_TO_DEVELOP;

@@ -3,7 +3,8 @@
 import { addDoc, collection, serverTimestamp, query, orderBy, getDocs, getDoc, where, Timestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
 import { getAdminDb, getAdminApp } from "@/lib/firebase/admin";
-import type { RegistrationFormData } from "@/lib/validations/registration";
+import { getAuth } from "firebase-admin/auth";
+import { minimalEnrollmentSchema, type RegistrationFormData } from "@/lib/validations/registration";
 import type { Registration, RegistrationStatus } from "@/types/registration";
 import { updateStudentSavedForm } from "@/lib/actions/student";
 import { getCourseById } from "@/lib/actions/course";
@@ -139,6 +140,88 @@ export async function submitRegistration(
   }
 }
 
+/** Course-page minimal enrollment; email comes from verified Firebase id token. */
+export async function submitMinimalEnrollment(
+  input: unknown
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  const parsed = minimalEnrollmentSchema.safeParse(input);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return { success: false, error: first?.message ?? "Invalid enrollment data" };
+  }
+  const data = parsed.data;
+
+  try {
+    const adminApp = getAdminApp();
+    const adminAuth = getAuth(adminApp);
+    let decoded: { uid: string; email?: string };
+    try {
+      decoded = await adminAuth.verifyIdToken(data.idToken);
+    } catch {
+      return { success: false, error: "Your session expired. Please sign in again." };
+    }
+
+    const uid = decoded.uid;
+    const email = decoded.email?.trim().toLowerCase();
+    if (!email) {
+      return { success: false, error: "Your account must have an email address to enroll." };
+    }
+
+    const existing = await getExistingRegistration(data.courseId, uid, email);
+    if (existing) {
+      return { success: false, error: "You are already enrolled in this course." };
+    }
+
+    const course = await getCourseById(data.courseId);
+    if (!course || course.status !== "open") {
+      return { success: false, error: "This course is not open for enrollment." };
+    }
+    if (course.slug !== data.courseSlug) {
+      return { success: false, error: "Course does not match." };
+    }
+
+    const now = new Date();
+    const baseCents = getBaseAmountCents(
+      { createdAt: now, singleOccupancyUpgrade: false },
+      course
+    );
+    const amountDueCents = baseCents;
+    const paymentStatus = amountDueCents > 0 ? "unpaid" : undefined;
+
+    const note = data.enrollmentNote?.trim();
+
+    const payload = omitUndefined({
+      userId: uid,
+      courseId: data.courseId,
+      courseSlug: data.courseSlug,
+      name: data.name.trim(),
+      email,
+      phone: data.phone.trim(),
+      ...(note ? { enrollmentNote: note } : {}),
+      minimalEnrollment: true,
+      status: "pending" as const,
+      country: "—",
+      currentRole: "Not provided (minimal enrollment)",
+      hasPlacedImplants: false,
+      hasRestoredCases: false,
+      aspectsToDevelop: [] as string[],
+      contactByWhatsApp: false,
+      consentContact: data.consentContact,
+      acceptedTerms: data.acceptedTerms,
+      amountDueCents,
+      ...(paymentStatus ? { paymentStatus } : {}),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    const ref = await addDoc(collection(db, COLLECTIONS.registrations), payload);
+    return { success: true, id: ref.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to submit enrollment";
+    return { success: false, error: message };
+  }
+}
+
 export async function getAllRegistrations(): Promise<(Registration & { id: string })[]> {
   try {
     const adminDb = getAdminDb();
@@ -192,7 +275,7 @@ const STUDENT_EDITABLE_FIELDS = [
   "name", "email", "phone", "country", "instagramHandle",
   "currentRole", "yearsExperience", "primaryWorkSetting", "gdcNumber",
   "hasPlacedImplants", "implantsPlacedCount", "hasRestoredCases", "aspectsToDevelop",
-  "preferredFormat", "howDidYouHear", "whatAttractedYou",
+  "preferredFormat", "howDidYouHear", "whatAttractedYou", "enrollmentNote",
   "contactByWhatsApp", "consentContact", "singleOccupancyUpgrade",
 ] as const;
 
@@ -386,6 +469,80 @@ export async function setSpecialRequestExtraFees(
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to set extra fees";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Admin sets the total amount due (pence/cents). Syncs extraFeesCents when it is a non-negative delta from
+ * course base (early bird + single occupancy) so the breakdown stays coherent. Blocked after payment is recorded.
+ */
+export async function adminSetRegistrationAmountDue(
+  registrationId: string,
+  amountDueCents: number,
+  idToken: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const adminApp = getAdminApp();
+    const { getAuth } = await import("firebase-admin/auth");
+    const adminAuth = getAuth(adminApp);
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const email = decoded.email;
+    const isAdmin = await isAdminEmail(email);
+    if (!isAdmin) {
+      return { success: false, error: "Only admins can change the total." };
+    }
+
+    const rounded = Math.round(Number(amountDueCents));
+    if (!Number.isFinite(rounded) || rounded < 0) {
+      return { success: false, error: "Enter a valid amount (0 or more)." };
+    }
+
+    const adminDb = getAdminDb();
+    if (!adminDb) {
+      return { success: false, error: "Admin backend is required to update totals." };
+    }
+
+    const ref = adminDb.collection(COLLECTIONS.registrations).doc(registrationId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return { success: false, error: "Enrollment not found." };
+    }
+
+    const data = snap.data()!;
+    if (data.paymentStatus === "paid") {
+      return {
+        success: false,
+        error: "Cannot change the total after payment has been recorded.",
+      };
+    }
+
+    const registration = normalizeRegistration(snap.id, data);
+    const course = await getCourseById(registration.courseId);
+    const baseCents = getBaseAmountCents(
+      {
+        createdAt: registration.createdAt ?? new Date(0),
+        singleOccupancyUpgrade: registration.singleOccupancyUpgrade,
+      },
+      course
+    );
+    const derivedExtra = rounded - baseCents;
+
+    const { FieldValue } = await import("firebase-admin/firestore");
+    const updatePayload: Record<string, unknown> = {
+      amountDueCents: rounded,
+      extraFeesCents: derivedExtra >= 0 ? derivedExtra : 0,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (rounded > 0) {
+      updatePayload.paymentStatus = data.paymentStatus ?? "unpaid";
+    }
+
+    await ref.update(updatePayload);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update total";
     return { success: false, error: message };
   }
 }

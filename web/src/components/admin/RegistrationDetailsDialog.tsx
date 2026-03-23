@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { updateRegistrationStatus, setSpecialRequestExtraFees } from "@/lib/actions/registration";
+import { useState, useEffect } from "react";
+import {
+  updateRegistrationStatus,
+  setSpecialRequestExtraFees,
+  adminSetRegistrationAmountDue,
+} from "@/lib/actions/registration";
 import { computeRegistrationTotal, formatPrice, getRegistrationTotalBreakdown } from "@/lib/pricing";
 import type { StudentProfile } from "@/types/student";
 import type { Registration, RegistrationStatus } from "@/types/registration";
@@ -19,6 +23,10 @@ interface RegistrationDetailsDialogProps {
   onFeesSet?: () => void;
   /** Required for admin to set extra fees on special requests. */
   getToken?: () => Promise<string>;
+  /** Admin: delete delegate after confirmation in dialog. */
+  onDeleteStudent?: (
+    student: StudentProfile & { id: string }
+  ) => Promise<{ success: true } | { success: false; error: string }>;
 }
 
 export default function RegistrationDetailsDialog({
@@ -31,12 +39,35 @@ export default function RegistrationDetailsDialog({
   onStatusUpdate,
   onFeesSet,
   getToken,
+  onDeleteStudent,
 }: RegistrationDetailsDialogProps) {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [extraFeesPounds, setExtraFeesPounds] = useState("");
   const [settingFees, setSettingFees] = useState(false);
   const [feesError, setFeesError] = useState<string | null>(null);
+  const [manualTotalPounds, setManualTotalPounds] = useState("");
+  const [settingManualTotal, setSettingManualTotal] = useState(false);
+  const [manualTotalError, setManualTotalError] = useState<string | null>(null);
+  const [deletingDelegate, setDeletingDelegate] = useState(false);
+  const [delegateDeleteError, setDelegateDeleteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setDelegateDeleteError(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || type !== "enrollment" || !registration) return;
+    setManualTotalError(null);
+    if (registration.amountDueCents != null && registration.amountDueCents > 0) {
+      setManualTotalPounds((registration.amountDueCents / 100).toFixed(2));
+    } else {
+      const comp = course ? computeRegistrationTotal(registration, course) : null;
+      setManualTotalPounds(comp && comp.total > 0 ? comp.total.toFixed(2) : "");
+    }
+  }, [open, type, registration?.id, registration?.amountDueCents, course?.id]);
 
   if (!open) return null;
 
@@ -160,6 +191,14 @@ export default function RegistrationDetailsDialog({
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Phone</label>
                 <p className="mt-1 text-white">{registration.phone || "—"}</p>
               </div>
+              {registration.enrollmentNote ? (
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/70">
+                    Delegate message
+                  </label>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-white/90">{registration.enrollmentNote}</p>
+                </div>
+              ) : null}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Course</label>
                 <p className="mt-1 text-white">{course?.title || registration.courseId}</p>
@@ -217,6 +256,74 @@ export default function RegistrationDetailsDialog({
                   </div>
                 ) : null;
               })()}
+              {getToken && registration.paymentStatus !== "paid" && (
+                <div className="col-span-2 rounded-lg border border-white/15 bg-white/5 p-4">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/70">
+                    Total due (manual)
+                  </label>
+                  <p className="mt-1 text-xs text-white/50">
+                    Override the amount the delegate pays. New Stripe checkouts use this value. Not available after
+                    payment is recorded.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-end gap-3">
+                    <div>
+                      <label htmlFor="admin-manual-total-gbp" className="block text-xs text-white/60">
+                        Amount (£)
+                      </label>
+                      <input
+                        id="admin-manual-total-gbp"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={manualTotalPounds}
+                        onChange={(e) => {
+                          setManualTotalPounds(e.target.value);
+                          setManualTotalError(null);
+                        }}
+                        className="mt-1 w-36 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                        placeholder="0.00"
+                        title="Total amount due in GBP"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={settingManualTotal}
+                      onClick={async () => {
+                        const pounds = parseFloat(manualTotalPounds);
+                        if (Number.isNaN(pounds) || pounds < 0) {
+                          setManualTotalError("Enter a valid amount (0 or more).");
+                          return;
+                        }
+                        setSettingManualTotal(true);
+                        setManualTotalError(null);
+                        try {
+                          const token = await getToken();
+                          const result = await adminSetRegistrationAmountDue(
+                            registration.id,
+                            Math.round(pounds * 100),
+                            token
+                          );
+                          if (result.success) {
+                            await onStatusUpdate?.();
+                          } else {
+                            setManualTotalError(result.error ?? "Failed to update total");
+                          }
+                        } catch {
+                          setManualTotalError("Failed to update total");
+                        } finally {
+                          setSettingManualTotal(false);
+                        }
+                      }}
+                      className="rounded-lg bg-accentGold px-4 py-2 text-sm font-semibold text-background hover:bg-accentGold/90 disabled:opacity-50"
+                    >
+                      {settingManualTotal ? "Saving…" : "Save total"}
+                    </button>
+                  </div>
+                  {manualTotalError && (
+                    <p className="mt-2 text-xs text-red-400">{manualTotalError}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-white/70">Payment status</label>
                 <p className="mt-1 text-white">
@@ -348,8 +455,45 @@ export default function RegistrationDetailsDialog({
           </div>
         ) : null}
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            {type === "student" && student && onDeleteStudent && getToken && (
+              <button
+                type="button"
+                disabled={deletingDelegate}
+                onClick={async () => {
+                  const label = student.email || student.displayName || "this delegate";
+                  if (
+                    !confirm(
+                      `Delete ${label} permanently?\n\nThis will remove their login, profile, and all course enrollments. This cannot be undone.`
+                    )
+                  ) {
+                    return;
+                  }
+                  setDeletingDelegate(true);
+                  setDelegateDeleteError(null);
+                  try {
+                    const result = await onDeleteStudent(student);
+                    if (!result.success) {
+                      setDelegateDeleteError(result.error);
+                    }
+                  } catch {
+                    setDelegateDeleteError("Something went wrong.");
+                  } finally {
+                    setDeletingDelegate(false);
+                  }
+                }}
+                className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50"
+              >
+                {deletingDelegate ? "Deleting…" : "Delete delegate"}
+              </button>
+            )}
+            {delegateDeleteError && (
+              <p className="mt-2 max-w-md text-xs text-red-400">{delegateDeleteError}</p>
+            )}
+          </div>
           <button
+            type="button"
             onClick={onClose}
             className="rounded-lg bg-accentGold px-4 py-2 text-sm font-semibold text-background transition hover:bg-accentGold/90"
           >

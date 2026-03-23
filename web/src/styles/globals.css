@@ -22,6 +22,52 @@ body {
   color: #ffffff;
 }
 
+/**
+ * Branded scrollbar — dark track + gold thumb (accentGold #c9a86e, background #1c1c1e).
+ * Use on overflow-auto containers (e.g. course “Secure Your Spot” sidebar).
+ */
+.scrollbar-brand {
+  scrollbar-width: thin;
+  scrollbar-color: #b89a62 rgba(255, 255, 255, 0.07);
+}
+
+.scrollbar-brand::-webkit-scrollbar {
+  width: 9px;
+}
+
+.scrollbar-brand::-webkit-scrollbar-track {
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+
+.scrollbar-brand::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d4b87d 0%, #c9a86e 45%, #a88d5a 100%);
+  border-radius: 9999px;
+  border: 2px solid rgba(28, 28, 30, 0.85);
+  background-clip: padding-box;
+}
+
+.scrollbar-brand::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e0c896 0%, #d4b87d 50%, #c9a86e 100%);
+  border: 2px solid rgba(28, 28, 30, 0.85);
+  background-clip: padding-box;
+}
+
+.scrollbar-brand::-webkit-scrollbar-thumb:active {
+  background: #c9a86e;
+}
+
+.scrollbar-brand::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
+.scrollbar-brand::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Marquee: one sliding track with duplicated content, move by 50% for seamless loop */
 @keyframes marquee-scroll {
   0% {
@@ -129,7 +175,7 @@ body {
   position: relative;
   display: flex;
   align-items: stretch;
-  min-height: 200px;
+  min-height: 300px;
   transition: 0.5s;
 }
 

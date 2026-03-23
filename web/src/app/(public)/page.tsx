@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HeroSequence from "@/components/HeroSequence";
 import ScrollIndicator from "@/components/ScrollIndicator";
+import { FadeIn } from "@/components/FadeIn";
 import Testimonials from "@/components/Testimonials";
 import { VideoTestimonialsSection } from "@/components/VideoTestimonialsSection";
 import { HomeCtaButtons } from "@/components/HomeCtaButtons";
@@ -49,26 +50,30 @@ export default async function HomePage() {
         className="relative z-30 mt-32 bg-background px-4 py-24 text-white md:mt-80 md:py-32"
       >
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
-          <div>
-            <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-              {philosophyHeading}
-            </TextReveal>
-            <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-              <TextReveal>{philosophyTitle}</TextReveal>
-            </h2>
-            <p className="mt-6 text-sm leading-relaxed text-white/70 md:text-base">
-              {philosophyBody}
-            </p>
-          </div>
-          <div className="relative h-64 overflow-hidden rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80">
-            <Image
-              src={philosophyImageSrc}
-              alt="Kaleidoscope Dental Academy - Precision-driven implant dentistry"
-              fill
-              className="object-cover object-left"
-              priority
-            />
-          </div>
+          <FadeIn>
+            <div>
+              <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+                {philosophyHeading}
+              </TextReveal>
+              <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+                <TextReveal>{philosophyTitle}</TextReveal>
+              </h2>
+              <p className="mt-6 text-sm leading-relaxed text-white/70 md:text-base">
+                {philosophyBody}
+              </p>
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.12}>
+            <div className="relative h-64 overflow-hidden rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80">
+              <Image
+                src={philosophyImageSrc}
+                alt="Kaleidoscope Dental Academy - Precision-driven implant dentistry"
+                fill
+                className="object-cover object-left"
+                priority
+              />
+            </div>
+          </FadeIn>
         </div>
       </section>
 
@@ -77,31 +82,59 @@ export default async function HomePage() {
         id="course-tracks"
         className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
       >
-        <div className="mx-auto max-w-6xl text-center">
-          <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-            Course Tracks
-          </TextReveal>
-          <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-            <TextReveal>Two intensive tracks. One academy.</TextReveal>
-          </h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
+        {/* Far right: left half of goldsolid only (200% + left), matches /courses */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[min(70vw,520px)] max-w-[50vw] bg-[url('/images/logo/goldsolid.png')] bg-left bg-no-repeat bg-[length:200%_auto] opacity-[0.08] [mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] sm:w-[min(74vw,760px)] sm:max-w-none sm:opacity-[0.1] md:w-[min(78vw,920px)] md:opacity-[0.12]"
+        />
+        <div className="relative z-10 mx-auto max-w-6xl text-center">
+          <FadeIn>
+            <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+              Course Tracks
+            </TextReveal>
+            <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+              <TextReveal>Two intensive tracks. One academy.</TextReveal>
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70 md:text-base">
+              iPlace // iRestore and Full Arch Intensive — structured hands-on programmes with clear CPD outcomes.
+            </p>
+          </FadeIn>
+          <div className="mt-12 flex flex-wrap justify-center gap-6">
             {[
               {
                 title: "iPlace // iRestore",
                 body: "Single and Multiple implants intensive course. 60 Hrs of CPD.",
                 provider: "Course Provider: Kaleidoscope Dental Academy",
                 slug: "iplace-irestore",
+                imageSrc:
+                  "/images/courses/Screenshot%202026-03-23%20055528.png",
               },
               {
                 title: "FULL ARCH INTENSIVE",
                 body: "(All-on-X). 46hrs of CPD.",
                 provider: "Course Provider: Kaleidoscope Dental Academy",
                 slug: "full-arch-intensive",
+                imageSrc:
+                  "/images/courses/Screenshot%202026-03-23%20055640.png",
               },
-            ].map((track) => (
-              <article key={track.title} className="course-track-box">
+            ].map((track, index) => (
+              <FadeIn
+                key={track.title}
+                delay={0.08 + index * 0.1}
+                className="w-full max-w-[280px] sm:w-[calc(50%-12px)]"
+              >
+                <article className="course-track-box group/course h-full">
                 <span className="course-track-glow" aria-hidden />
                 <div className="course-track-content text-center">
+                  <div className="relative -mx-6 -mt-6 mb-4 aspect-[4/3] w-[calc(100%+3rem)] overflow-hidden rounded-t-[1.5rem] transition-[margin] duration-500 group-hover/course:-mt-8">
+                    <Image
+                      src={track.imageSrc}
+                      alt={`${track.title} course visual`}
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 640px) 100vw, 280px"
+                    />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold tracking-tight">
                       {track.title}
@@ -119,6 +152,7 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </article>
+              </FadeIn>
             ))}
           </div>
         </div>
@@ -129,23 +163,32 @@ export default async function HomePage() {
         id="instructors"
         className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
       >
-        <div className="mx-auto max-w-6xl text-center">
-          <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-            Meet our instructors
-          </TextReveal>
-          <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-            <TextReveal>Expert faculty. Real-world focus.</TextReveal>
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70 md:text-base">
-            Learn from delegates and educators who combine years of practice with a commitment to structured, hands-on training.
-          </p>
+        {/* Far left: right half of goldsolid only (200% + bg-right); mirror of course-tracks strip */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 z-0 w-[min(70vw,520px)] max-w-[50vw] bg-[url('/images/logo/goldsolid.png')] bg-right bg-no-repeat bg-[length:200%_auto] opacity-[0.08] [mask-image:linear-gradient(to_right,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] sm:w-[min(74vw,760px)] sm:max-w-none sm:opacity-[0.1] md:w-[min(78vw,920px)] md:opacity-[0.12]"
+        />
+        <div className="relative z-10 mx-auto max-w-6xl text-center">
+          <FadeIn>
+            <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+              Meet our instructors
+            </TextReveal>
+            <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+              <TextReveal>Expert faculty. Real-world focus.</TextReveal>
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70 md:text-base">
+              Learn from delegates and educators who combine years of practice with a commitment to structured, hands-on training.
+            </p>
+          </FadeIn>
           <div className="mt-12 flex flex-wrap justify-center gap-6">
             {instructors.length === 0 ? (
-              <p className="w-full text-center text-sm text-white/50">
-                No instructors available yet.
-              </p>
+              <FadeIn className="w-full">
+                <p className="w-full text-center text-sm text-white/50">
+                  No instructors available yet.
+                </p>
+              </FadeIn>
             ) : (
-              instructors.map((instructor) => {
+              instructors.map((instructor, index) => {
                 // Truncate bio to ~120 characters for card display
                 const bioPreview = instructor.bio
                   ? instructor.bio.length > 120
@@ -155,9 +198,13 @@ export default async function HomePage() {
                 const imageUrl = instructor.imageUrl || "/images/instructors/placeholder.png";
 
                 return (
-                  <article
+                  <FadeIn
                     key={instructor.id}
-                    className="group relative w-full max-w-[280px] overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04] sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
+                    delay={0.06 * index}
+                    className="w-full max-w-[280px] sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
+                  >
+                  <article
+                    className="group relative w-full overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] transition hover:border-accentGold/20 hover:bg-white/[0.04]"
                   >
                     <div className="aspect-[3/4] overflow-hidden rounded-t-2xl bg-white/5">
                       <Image
@@ -182,32 +229,37 @@ export default async function HomePage() {
                       )}
                     </div>
                   </article>
+                  </FadeIn>
                 );
               })
             )}
           </div>
-          <div className="mt-10 text-center">
+          <FadeIn className="mt-10 block text-center">
             <Link
               href="/courses"
               className="inline-block text-xs font-semibold uppercase tracking-[0.18em] text-accentGold transition hover:text-accentGold/80"
             >
               See instructors on courses →
             </Link>
-          </div>
+          </FadeIn>
         </div>
       </section>
 
       {/* Testimonials — marquee of cards with name & rating (only if 5+ testimonials) */}
       {testimonialsFromDb.length >= 5 && (
-        <Testimonials items={testimonialsFromDb} />
+        <FadeIn className="block w-full">
+          <Testimonials items={testimonialsFromDb} />
+        </FadeIn>
       )}
 
       {/* Video testimonials — grid of video cards (from admin uploads) */}
-      <VideoTestimonialsSection items={home.videoTestimonials} />
+      <FadeIn className="block w-full">
+        <VideoTestimonialsSection items={home.videoTestimonials} />
+      </FadeIn>
 
       {/* 4. CTA */}
       <section className="relative z-10 bg-background px-4 py-20 text-white md:py-28">
-        <div className="mx-auto max-w-3xl text-center overflow-visible">
+        <FadeIn className="mx-auto max-w-3xl text-center overflow-visible">
           <h2 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl overflow-visible">
             <TextReveal>{ctaTitle}</TextReveal>
           </h2>
@@ -215,7 +267,7 @@ export default async function HomePage() {
             {ctaBody}
           </p>
           <HomeCtaButtons />
-        </div>
+        </FadeIn>
       </section>
     </main>
   );

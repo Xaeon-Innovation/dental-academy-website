@@ -14,6 +14,8 @@ import {
 } from "firebase/firestore";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
 import { getAdminDb, getAdminApp } from "@/lib/firebase/admin";
+import { getAuth } from "firebase-admin/auth";
+import { isAdminEmail } from "@/lib/actions/settings";
 import type { StudentProfile, StudentProfileCreatePayload, StudentProfileUpdatePayload } from "@/types/student";
 import type { Registration } from "@/types/registration";
 
@@ -223,5 +225,106 @@ export async function getAllStudents(): Promise<(StudentProfile & { id: string }
   } catch (err) {
     console.error("Error fetching all students:", err);
     return [];
+  }
+}
+
+/**
+ * Admin-only: delete a delegate’s Firebase Auth account, `students/{uid}` doc, and their registration docs
+ * (by `userId` and by email when the Auth user exists).
+ */
+export async function deleteDelegateUser(
+  uid: string,
+  idToken: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const trimmedUid = uid?.trim();
+  if (!trimmedUid) {
+    return { success: false, error: "User ID is required." };
+  }
+
+  try {
+    const adminApp = getAdminApp();
+    const adminAuth = getAuth(adminApp);
+
+    let decoded: { uid: string; email?: string };
+    try {
+      decoded = await adminAuth.verifyIdToken(idToken);
+    } catch {
+      return { success: false, error: "Your session expired. Please sign in again." };
+    }
+
+    if (!(await isAdminEmail(decoded.email))) {
+      return { success: false, error: "Only admins can delete delegate accounts." };
+    }
+
+    if (decoded.uid === trimmedUid) {
+      return { success: false, error: "You cannot delete your own account from here." };
+    }
+
+    let targetEmail: string | null = null;
+    try {
+      const userRecord = await adminAuth.getUser(trimmedUid);
+      targetEmail = userRecord.email?.toLowerCase().trim() ?? null;
+      if (targetEmail && (await isAdminEmail(targetEmail))) {
+        return {
+          success: false,
+          error:
+            "This account is an admin. Remove admin access in Settings before deleting, or use the admin user tools.",
+        };
+      }
+    } catch (e: unknown) {
+      const code =
+        e && typeof e === "object" && "code" in e ? String((e as { code: string }).code) : "";
+      if (code !== "auth/user-not-found") {
+        const message = e instanceof Error ? e.message : "Failed to look up user.";
+        return { success: false, error: message };
+      }
+    }
+
+    const adminDb = getAdminDb();
+    if (!adminDb) {
+      return { success: false, error: "Admin database is not available on the server." };
+    }
+
+    const regCol = adminDb.collection(COLLECTIONS.registrations);
+    const registrationIds = new Set<string>();
+
+    const byUid = await regCol.where("userId", "==", trimmedUid).get();
+    byUid.docs.forEach((d) => registrationIds.add(d.id));
+
+    if (targetEmail) {
+      const byEmail = await regCol.where("email", "==", targetEmail).get();
+      byEmail.docs.forEach((d) => registrationIds.add(d.id));
+    }
+
+    const ids = [...registrationIds];
+    const chunkSize = 400;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const batch = adminDb.batch();
+      for (const id of ids.slice(i, i + chunkSize)) {
+        batch.delete(regCol.doc(id));
+      }
+      await batch.commit();
+    }
+
+    await adminDb.collection(COLLECTIONS.students).doc(trimmedUid).delete();
+
+    try {
+      await adminAuth.deleteUser(trimmedUid);
+    } catch (e: unknown) {
+      const code =
+        e && typeof e === "object" && "code" in e ? String((e as { code: string }).code) : "";
+      if (code !== "auth/user-not-found") {
+        const message = e instanceof Error ? e.message : "Failed to delete Firebase Auth user.";
+        return {
+          success: false,
+          error: `Registrations and profile were removed, but Auth deletion failed: ${message}`,
+        };
+      }
+    }
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to delete delegate";
+    return { success: false, error: message };
   }
 }

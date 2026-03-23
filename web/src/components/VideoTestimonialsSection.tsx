@@ -111,7 +111,12 @@ export function VideoTestimonialsSection({ items = [] }: VideoTestimonialsSectio
         id="video-testimonials"
         className="relative z-20 bg-background px-4 py-20 text-white md:py-28"
       >
-        <div className="mx-auto max-w-6xl">
+        {/* Far right: left half of goldsolid (same treatment as Course Tracks) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[min(70vw,520px)] max-w-[50vw] bg-[url('/images/logo/goldsolid.png')] bg-left bg-no-repeat bg-[length:200%_auto] opacity-[0.08] [mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] sm:w-[min(74vw,760px)] sm:max-w-none sm:opacity-[0.1] md:w-[min(78vw,920px)] md:opacity-[0.12]"
+        />
+        <div className="relative z-10 mx-auto max-w-6xl">
           <div className="text-center">
             <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
               Video testimonials

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, Eye, Trash2, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllStudents } from "@/lib/actions/student";
+import { getAllStudents, deleteDelegateUser } from "@/lib/actions/student";
 import { getAllRegistrations, updateRegistrationStatus, deleteRegistration } from "@/lib/actions/registration";
 import { getCourses } from "@/lib/actions/course";
 import { computeRegistrationTotal, formatPrice } from "@/lib/pricing";
@@ -38,6 +38,7 @@ export default function AdminRegistrationsPage() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null);
   const [detailsDialog, setDetailsDialog] = useState<{
     open: boolean;
     type: "student" | "enrollment";
@@ -127,6 +128,52 @@ export default function AdminRegistrationsPage() {
     );
   }, [registrations, courses, searchQuery]);
 
+  async function runDeleteDelegate(
+    student: StudentProfile & { id: string }
+  ): Promise<{ success: true } | { success: false; error: string }> {
+    const uid = student.uid || student.id;
+    if (!user) {
+      const err = "You must be signed in.";
+      setUpdateError(err);
+      return { success: false, error: err };
+    }
+    setDeletingStudentId(uid);
+    setUpdateError(null);
+    try {
+      const token = (await user.getIdToken()) ?? "";
+      const result = await deleteDelegateUser(uid, token);
+      if (result.success) {
+        await loadData();
+        setDetailsDialog((prev) =>
+          prev.open && prev.type === "student" && (prev.student?.uid === uid || prev.student?.id === uid)
+            ? { open: false, type: "student" }
+            : prev
+        );
+      } else {
+        setUpdateError(result.error);
+      }
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete user";
+      setUpdateError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setDeletingStudentId(null);
+    }
+  }
+
+  function handleDeleteStudentRow(student: StudentProfile & { id: string }) {
+    const label = student.email || student.displayName || "this delegate";
+    if (
+      !confirm(
+        `Delete ${label} permanently?\n\nThis will remove their Firebase login, profile data, and all course enrollments. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    void runDeleteDelegate(student);
+  }
+
   async function handleDelete(registrationId: string) {
     if (!confirm("Are you sure you want to delete this enrollment? This cannot be undone.")) return;
     setDeletingId(registrationId);
@@ -177,12 +224,43 @@ export default function AdminRegistrationsPage() {
         "What Attracted You": reg.whatAttractedYou ?? "",
         "Contact by WhatsApp": reg.contactByWhatsApp ? "Yes" : "No",
         "Single Occupancy Upgrade": reg.singleOccupancyUpgrade ? "Yes" : "No",
+        "Enrollment note": reg.enrollmentNote ?? "",
       };
     });
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Enrollments");
     XLSX.writeFile(wb, `enrollments-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  async function handleExportUsersExcel() {
+    const XLSX = await import("xlsx");
+    const rows = students.map((s) => ({
+      "User ID": s.uid || s.id,
+      Name: s.displayName || (s.email ? s.email.split("@")[0] : "") || "",
+      Email: s.email ?? "",
+      Phone: s.phone ?? "",
+      "Sign-up Date": s.createdAt
+        ? new Date(s.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "",
+      "Last Updated": s.updatedAt
+        ? new Date(s.updatedAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Users");
+    XLSX.writeFile(wb, `user-registrations-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   async function handleStatusChange(registrationId: string, newStatus: RegistrationStatus) {
@@ -254,12 +332,13 @@ export default function AdminRegistrationsPage() {
         </button>
       </div>
 
-      {/* Export Excel - only when on enrollments tab */}
-      {activeTab === "enrollments" && registrations.length > 0 && (
+      {/* Export Excel — active tab, when there is data */}
+      {((activeTab === "users" && students.length > 0) ||
+        (activeTab === "enrollments" && registrations.length > 0)) && (
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={handleExportExcel}
+            onClick={activeTab === "users" ? handleExportUsersExcel : handleExportExcel}
             className="inline-flex items-center gap-2 rounded-lg border border-accentGold/50 bg-accentGold/10 px-4 py-2 text-sm font-medium text-accentGold transition hover:bg-accentGold/20"
           >
             <Download className="h-4 w-4" />
@@ -361,6 +440,14 @@ export default function AdminRegistrationsPage() {
                           title="View details"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudentRow(student)}
+                          disabled={deletingStudentId === (student.uid || student.id)}
+                          className="rounded p-1.5 text-red-400/80 transition hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
+                          title="Delete delegate account"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -531,6 +618,7 @@ export default function AdminRegistrationsPage() {
           setActiveTab("enrollments");
         }}
         getToken={user ? async () => (await user.getIdToken()) ?? "" : undefined}
+        onDeleteStudent={runDeleteDelegate}
       />
     </div>
   );

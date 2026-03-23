@@ -34,7 +34,7 @@ export function EnrollButton({ courseSlug, variant = "default", className, child
     }
     if (!user) {
       e.preventDefault();
-      const redirect = `/courses/${courseSlug}/register`;
+      const redirect = `/courses/${courseSlug}`;
       router.push(`/portal?redirect=${encodeURIComponent(redirect)}`);
     }
   };
@@ -58,7 +58,7 @@ export function EnrollButton({ courseSlug, variant = "default", className, child
 
   return (
     <Link
-      href={`/courses/${courseSlug}/register`}
+      href={`/courses/${courseSlug}`}
       onClick={handleClick}
       className={className || baseClasses}
     >
