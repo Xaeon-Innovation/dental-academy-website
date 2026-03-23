@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
+import { revalidatePath } from "next/cache";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { courseSchema, type CourseFormData } from "@/lib/validations/course";
@@ -40,16 +41,32 @@ function convertTimestamps(data: any): any {
   return converted;
 }
 
+/** Card layout image: prefer camelCase; accept snake_case from legacy/manual Firestore docs */
+function pickLayoutImageUrl(data: Record<string, unknown>): string | undefined {
+  const camel = data.layoutImageUrl;
+  const snake = data.layout_image_url;
+  const s =
+    (typeof camel === "string" && camel.trim()) ||
+    (typeof snake === "string" && snake.trim()) ||
+    "";
+  return s || undefined;
+}
+
 export async function getCourses(): Promise<Course[]> {
   try {
     const coursesRef = collection(db, COLLECTIONS.courses);
     const q = query(coursesRef, orderBy("order", "asc"));
     const snapshot = await getDocs(q);
     
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data()),
-    })) as Course[];
+    return snapshot.docs.map((doc) => {
+      const raw = convertTimestamps(doc.data()) as Record<string, unknown>;
+      const layoutImageUrl = pickLayoutImageUrl(raw);
+      return {
+        id: doc.id,
+        ...raw,
+        ...(layoutImageUrl ? { layoutImageUrl } : {}),
+      } as Course;
+    });
   } catch (err) {
     console.error("Error fetching courses:", err);
     return [];
@@ -67,9 +84,12 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     }
     
     const doc = snapshot.docs[0];
+    const raw = convertTimestamps(doc.data()) as Record<string, unknown>;
+    const layoutImageUrl = pickLayoutImageUrl(raw);
     return {
       id: doc.id,
-      ...convertTimestamps(doc.data()),
+      ...raw,
+      ...(layoutImageUrl ? { layoutImageUrl } : {}),
     } as Course;
   } catch (err) {
     console.error("Error fetching course by slug:", err);
@@ -86,9 +106,12 @@ export async function getCourseById(id: string): Promise<Course | null> {
       return null;
     }
     
+    const raw = convertTimestamps(snap.data()) as Record<string, unknown>;
+    const layoutImageUrl = pickLayoutImageUrl(raw);
     return {
       id: snap.id,
-      ...convertTimestamps(snap.data()),
+      ...raw,
+      ...(layoutImageUrl ? { layoutImageUrl } : {}),
     } as Course;
   } catch (err) {
     console.error("Error fetching course by id:", err);
@@ -137,7 +160,8 @@ export async function createCourse(data: CourseFormData): Promise<{ success: tru
       collection(db, COLLECTIONS.courses),
       payload
     );
-    
+
+    revalidatePath("/courses");
     return { success: true, id: ref.id };
   } catch (err) {
     if (err instanceof Error && err.name === "ZodError") {
@@ -168,7 +192,8 @@ export async function updateCourse(
     });
     
     await updateDoc(ref, payload);
-    
+
+    revalidatePath("/courses");
     return { success: true };
   } catch (err) {
     if (err instanceof Error && err.name === "ZodError") {

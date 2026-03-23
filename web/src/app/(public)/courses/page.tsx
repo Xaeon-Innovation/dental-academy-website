@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { getCourses } from "@/lib/actions/course";
 import CoursesClient from "./CoursesClient";
 
+// Always fetch live course data (card images, titles, etc.) — avoid stale static cache after admin edits
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Courses | Kaleidoscope Dental Academy",
   description:

@@ -131,6 +131,7 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     const result = await uploadCourseLayoutImage(file);
     if (result.success) {
       updateField("layoutImageUrl", result.url);
+      setLayoutImagePreview(result.url);
     } else {
       setError(result.error || "Failed to upload image");
       setLayoutImagePreview(form.layoutImageUrl || null);

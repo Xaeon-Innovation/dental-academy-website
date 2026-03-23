@@ -58,12 +58,12 @@ export const courseSchema = z.object({
   track: z.string().optional(),
   level: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal("")),
-  // Accept empty, relative paths (/images/courses/... from device uploads), or full URLs (order matters: check path before .url())
+  // Accept empty, app-relative paths, or absolute http(s) URLs (blob/CDN; avoid strict .url()-only so uncommon hosts still save)
   layoutImageUrl: z
     .union([
       z.literal(""),
       z.string().min(1).regex(/^\//),
-      z.string().url(),
+      z.string().min(1).regex(/^https?:\/\/.+/i),
     ])
     .optional(),
   dates: z.array(z.string()).optional(),
