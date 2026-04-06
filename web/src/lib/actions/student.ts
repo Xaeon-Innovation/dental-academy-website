@@ -62,6 +62,7 @@ function convertTimestamps(data: Record<string, unknown> | null): Record<string,
   converted.createdAt = toDate(converted.createdAt) ?? converted.createdAt;
   converted.updatedAt = toDate(converted.updatedAt) ?? converted.updatedAt;
   converted.approvedAt = toDate(converted.approvedAt) ?? converted.approvedAt;
+  converted.legacyApprovedAt = toDate(converted.legacyApprovedAt) ?? converted.legacyApprovedAt;
   if (converted.savedFormSnapshot && typeof converted.savedFormSnapshot === "object") {
     converted.savedFormSnapshot = converted.savedFormSnapshot as Record<string, unknown>;
   }

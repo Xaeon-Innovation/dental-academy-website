@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/cases", label: "Cases" },
   { href: "/admin/enquiries", label: "Enquiries" },
+  { href: "/admin/legacy-access", label: "Legacy access" },
   { href: "/admin/registrations", label: "Registrations" },
   { href: "/admin/blog", label: "Blog" },
   { href: "/admin/home", label: "Home management" },

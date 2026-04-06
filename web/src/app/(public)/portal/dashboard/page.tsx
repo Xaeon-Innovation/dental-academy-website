@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentProfile, getRegistrationsByUserId, createOrUpdateStudentProfile } from "@/lib/actions/student";
 import { getCourses } from "@/lib/actions/course";
+import { getSettings } from "@/lib/actions/settings";
 import { computeRegistrationTotal, formatPrice, getBaseAmountCents, getRegistrationTotalBreakdown } from "@/lib/pricing";
 import { submitSpecialRequest, confirmRegistrationForPayment } from "@/lib/actions/registration";
 import type { StudentProfile } from "@/types/student";
@@ -33,6 +34,7 @@ export default function PortalDashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [registrations, setRegistrations] = useState<(Registration & { id: string })[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [materials, setMaterials] = useState<Record<string, { title: string; url: string }[]>>({});
   const [loading, setLoading] = useState(true);
   const [paymentRegistrationId, setPaymentRegistrationId] = useState<string | null>(null);
   const [specialRequestRegId, setSpecialRequestRegId] = useState<string | null>(null);
@@ -82,10 +84,12 @@ export default function PortalDashboardPage() {
       getStudentProfile(user.uid),
       getRegistrationsByUserId(user.uid),
       getCourses(),
-    ]).then(([p, regs, coursesData]) => {
+      getSettings(),
+    ]).then(([p, regs, coursesData, settings]) => {
       setProfile(p ?? null);
       setRegistrations(regs);
       setCourses(coursesData);
+      setMaterials((settings.courseMaterials as Record<string, { title: string; url: string }[]>) ?? {});
       setLoading(false);
     });
   }, [user]);
@@ -379,6 +383,46 @@ export default function PortalDashboardPage() {
                   </ul>
                 )}
               </section>
+
+              {profile?.legacyDelegate && (profile.legacyCourses?.length ?? 0) > 0 && (
+                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
+                    Course materials
+                  </h2>
+                  <p className="mt-2 text-xs text-white/60">
+                    Materials for past delegates (admin verified).
+                  </p>
+                  <div className="mt-4 space-y-5">
+                    {profile.legacyCourses!.map((courseId) => {
+                      const courseTitle = courseById.get(courseId)?.title ?? courseId;
+                      const links = materials[courseId] ?? [];
+                      return (
+                        <div key={courseId} className="rounded-lg border border-white/10 bg-black/20 p-4">
+                          <p className="text-sm font-medium text-white">{courseTitle}</p>
+                          {links.length === 0 ? (
+                            <p className="mt-1 text-xs text-white/55">No materials added yet.</p>
+                          ) : (
+                            <ul className="mt-2 space-y-1.5">
+                              {links.map((l, idx) => (
+                                <li key={idx}>
+                                  <a
+                                    href={l.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-accentGold hover:underline"
+                                  >
+                                    {l.title}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
 
               <section
                 id="delegate-profile"

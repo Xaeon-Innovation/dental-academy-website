@@ -1,6 +1,7 @@
 import AdminEmailManager from "@/components/admin/AdminEmailManager";
 import ContactInfoEditor from "@/components/admin/ContactInfoEditor";
 import BlogNavToggle from "@/components/admin/BlogNavToggle";
+import CourseMaterialsEditor from "@/components/admin/CourseMaterialsEditor";
 
 export default function AdminSettingsPage() {
   return (
@@ -19,6 +20,8 @@ export default function AdminSettingsPage() {
       <ContactInfoEditor />
 
       <AdminEmailManager />
+
+      <CourseMaterialsEditor />
     </div>
   );
 }

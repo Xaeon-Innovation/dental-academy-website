@@ -280,6 +280,15 @@ function PortalPageContent() {
                 ? "We couldn't load your enrollment details. Go back to the course page and tap \"Finish sign up and enroll\" again."
                 : "Log in with your approved email and phone number to access your delegate dashboard."}
           </p>
+          {!finalizeEnroll && (
+            <p className="mt-3 text-xs text-white/55">
+              Past delegate?{" "}
+              <Link href="/portal/legacy" className="text-accentGold/80 underline hover:text-accentGold">
+                Request access
+              </Link>
+              .
+            </p>
+          )}
 
           {finalizeEnroll && finalizeDraftMissing && (
             <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">

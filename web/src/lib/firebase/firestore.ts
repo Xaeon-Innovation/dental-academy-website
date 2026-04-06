@@ -7,6 +7,7 @@ export const COLLECTIONS = {
   courses: "courses",
   registrations: "registrations",
   enquiries: "enquiries",
+  legacyAccessRequests: "legacyAccessRequests",
   authAuditLogs: "authAuditLogs",
   loginRateLimits: "loginRateLimits",
   blog: "blog",

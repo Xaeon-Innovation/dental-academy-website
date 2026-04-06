@@ -9,6 +9,12 @@ export interface StudentProfile {
   loginEnabled?: boolean;
   approvedAt?: Date;
   approvedByAdminUid?: string;
+  /** Past delegate access (admin-verified). When true, allow materials access for legacyCourses. */
+  legacyDelegate?: boolean;
+  /** Course IDs the delegate attended previously (admin-verified). */
+  legacyCourses?: string[];
+  legacyApprovedAt?: Date;
+  legacyApprovedByAdminUid?: string;
   displayName?: string;
   /** Last enrollment form data for prefilling future enrollments */
   savedFormSnapshot?: Partial<RegistrationFormData>;

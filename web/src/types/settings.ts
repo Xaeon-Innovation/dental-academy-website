@@ -40,6 +40,8 @@ export interface SiteSettings {
   adminEmails?: string[]; // List of emails allowed to access admin dashboard
   /** When false, Blog link is hidden from header and footer. Default true. */
   showBlogInNav?: boolean;
+  /** Course materials library, keyed by courseId. External links (PDFs, docs, etc.). */
+  courseMaterials?: Record<string, { title: string; url: string }[]>;
   socialLinks?: {
     twitter?: string;
     linkedin?: string;
