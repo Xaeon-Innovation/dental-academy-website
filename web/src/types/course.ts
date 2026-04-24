@@ -18,13 +18,26 @@ export type CoursePricing = {
   currency?: "EUR" | "EGP" | "USD";
   earlyBird?: {
     amount: string;
-    until: string;
+    /** Omitted when early-bird cutoff is only on `batches[].earlyBirdUntil`. */
+    until?: string;
   };
   standard: {
     amount: string;
     from: string;
   };
   singleOccupancyUpgrade?: string;
+};
+
+export type CourseBatch = {
+  id: string;
+  label: string;
+  dateRange: string;
+  duration?: string;
+  location?: string;
+  /** Batch-specific early bird cutoff (hide when expired). */
+  earlyBirdUntil?: string;
+  /** When set, public course page shows this cohort’s agenda instead of `Course.agenda`. */
+  agenda?: CourseAgendaDay[];
 };
 
 export interface Course {
@@ -48,6 +61,7 @@ export interface Course {
   location?: string;
   maxParticipants?: number;
   dateRange?: string;
+  batches?: CourseBatch[];
   pricing?: CoursePricing;
   packageIncludes?: string[];
   relatedCourseSlugs?: string[];

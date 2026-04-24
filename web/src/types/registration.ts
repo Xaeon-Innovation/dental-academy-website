@@ -43,6 +43,11 @@ export interface Registration {
   userId?: string;
   courseId: string;
   courseSlug?: string;
+  batchId?: string;
+  batchLabel?: string;
+  batchDateRange?: string;
+  batchDuration?: string;
+  batchLocation?: string;
   email: string;
   name: string;
   phone?: string;

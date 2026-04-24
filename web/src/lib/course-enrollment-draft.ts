@@ -4,6 +4,11 @@ export const MINIMAL_ENROLLMENT_DRAFT_KEY = "minimalEnrollmentDraft_v1";
 export type MinimalEnrollmentDraft = {
   courseSlug: string;
   courseId?: string;
+  batchId?: string;
+  batchLabel?: string;
+  batchDateRange?: string;
+  batchDuration?: string;
+  batchLocation?: string;
   enrollmentNote?: string;
   name?: string;
   email?: string;

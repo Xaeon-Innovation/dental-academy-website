@@ -21,7 +21,8 @@ const coursePricingSchema = z.object({
   earlyBird: z
     .object({
       amount: z.string().min(1, "Amount is required"),
-      until: z.string().min(1, "Until date is required"),
+      /** Course-level cutoff; optional when `batches[].earlyBirdUntil` is used instead. */
+      until: z.string().optional(),
     })
     .optional(),
   standard: z.object({
@@ -29,6 +30,16 @@ const coursePricingSchema = z.object({
     from: z.string().min(1, "From date is required"),
   }),
   singleOccupancyUpgrade: z.string().optional(),
+});
+
+const courseBatchSchema = z.object({
+  id: z.string().min(1, "Batch id is required"),
+  label: z.string().min(1, "Batch label is required"),
+  dateRange: z.string().min(1, "Batch date range is required"),
+  duration: z.string().optional(),
+  location: z.string().optional(),
+  earlyBirdUntil: z.string().optional(),
+  agenda: z.array(courseAgendaDaySchema).optional(),
 });
 
 export const courseSchema = z.object({
@@ -52,6 +63,7 @@ export const courseSchema = z.object({
   location: z.string().optional(),
   maxParticipants: z.number().int().min(1).optional(),
   dateRange: z.string().optional(),
+  batches: z.array(courseBatchSchema).optional(),
   pricing: coursePricingSchema.optional(),
   packageIncludes: z.array(z.string().min(1, "Package item cannot be empty")).optional(),
   relatedCourseSlugs: z.array(z.string()).optional(),

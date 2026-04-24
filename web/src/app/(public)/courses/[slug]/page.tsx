@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import { getCourseBySlug, getCourses } from "@/lib/actions/course";
 import { SpotsLeft } from "@/components/SpotsLeft";
-import { CourseEnquiryForm } from "@/components/CourseEnquiryForm";
+import { CourseEnquiryFormSyncedToDetailBatch } from "@/components/CourseEnquiryFormSyncedToDetailBatch";
+import { CourseEnquirySidebarPanel } from "@/components/CourseEnquirySidebarPanel";
+import { CourseAgendaSection } from "@/components/CourseAgendaSection";
+import { CourseDetailBatchProvider } from "@/contexts/CourseBatchContext";
+import { MobileStickyEnquiryBar } from "@/components/MobileStickyEnquiryBar";
+import { EarlyBirdCourseBanners } from "@/components/EarlyBirdCourseBanners";
+import { CourseBatchesSummary } from "@/components/CourseBatchesSummary";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,7 +42,7 @@ export default async function CourseDetailPage({ params }: Props) {
   const detail = course;
 
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className="min-h-screen bg-background pb-6 text-white md:pb-0">
       {/* Breadcrumb */}
       <div className="border-b border-white/5 bg-black/20">
         <div className="mx-auto max-w-6xl px-4 py-3">
@@ -55,9 +61,13 @@ export default async function CourseDetailPage({ params }: Props) {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
-        <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
+        <CourseDetailBatchProvider batches={detail.batches}>
+          <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
           {/* Main content */}
           <div className="min-w-0">
+            <div className="mb-6">
+              <EarlyBirdCourseBanners course={course} />
+            </div>
             {/* Hero */}
             <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-white/[0.04] via-transparent to-black/40">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(201,168,110,0.12),transparent)]" />
@@ -72,26 +82,50 @@ export default async function CourseDetailPage({ params }: Props) {
                 </h1>
                 <p className="mt-2 text-white/70">{course.description}</p>
                 {detail && (
-                  <div className="mt-6 flex flex-wrap gap-6 text-sm text-white/80">
-                    <span className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-accentGold/80" aria-hidden />
-                      {detail.dateRange}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-accentGold/80" aria-hidden />
-                      {detail.duration}
-                    </span>
-                    <span className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accentGold/80" aria-hidden />
-                      <span className="leading-relaxed">{detail.location}</span>
-                    </span>
-                    {detail.maxParticipants && (
-                      <span className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-accentGold/80" aria-hidden />
-                        Max {detail.maxParticipants} delegates
-                      </span>
+                  <>
+                    {detail.batches && detail.batches.length > 0 ? (
+                      <CourseBatchesSummary
+                        batches={detail.batches}
+                        fallbackDuration={detail.duration}
+                        fallbackLocation={detail.location}
+                      />
+                    ) : (
+                      <div className="mt-6 flex flex-wrap gap-6 text-sm text-white/80">
+                        {detail.dateRange ? (
+                          <span className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-accentGold/80" aria-hidden />
+                            {detail.dateRange}
+                          </span>
+                        ) : null}
+                        {detail.duration ? (
+                          <span className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-accentGold/80" aria-hidden />
+                            {detail.duration}
+                          </span>
+                        ) : null}
+                        {detail.location ? (
+                          <span className="flex items-start gap-2">
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accentGold/80" aria-hidden />
+                            <span className="leading-relaxed">{detail.location}</span>
+                          </span>
+                        ) : null}
+                        {detail.maxParticipants ? (
+                          <span className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-accentGold/80" aria-hidden />
+                            Max {detail.maxParticipants} delegates
+                          </span>
+                        ) : null}
+                      </div>
                     )}
-                  </div>
+                    {detail.batches && detail.batches.length > 0 && detail.maxParticipants ? (
+                      <div className="mt-4 flex flex-wrap gap-6 text-sm text-white/80">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-accentGold/80" aria-hidden />
+                          Max {detail.maxParticipants} delegates
+                        </span>
+                      </div>
+                    ) : null}
+                  </>
                 )}
                 <div className="mt-4 flex items-center gap-2">
                   {course.cpd && (
@@ -143,124 +177,62 @@ export default async function CourseDetailPage({ params }: Props) {
               </>
             ) : null}
 
-            {detail.agenda && detail.agenda.length > 0 ? (
-              <>
-                {/* Course Agenda */}
-                <section className="mt-10">
-                  <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
-                    Course Agenda
-                  </h2>
+            <CourseAgendaSection course={{ agenda: detail.agenda, batches: detail.batches }} />
+
+            {detail.requirements && detail.requirements.length > 0 ? (
+              <section className="mt-10">
+                <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
+                  Requirements
+                </h2>
+                <ul className="mt-4 space-y-3">
+                  {detail.requirements.map((req, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-white/80">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accentGold/10 text-accentGold">
+                        <Info className="h-3 w-3" aria-hidden />
+                      </span>
+                      {req}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {(detail.instructors && detail.instructors.length > 0) || detail.instructor ? (
+              <section className="mt-10">
+                <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
+                  {detail.instructors && detail.instructors.length > 1 ? "Instructors" : "Instructor"}
+                </h2>
+                {detail.instructors && detail.instructors.length > 0 ? (
                   <div className="mt-4 space-y-4">
-                    {detail.agenda.map((day, index) => (
+                    {detail.instructors.map((instructor, idx) => (
                       <div
-                        key={`${day.day}-${day.date}-${index}`}
-                        className="rounded-xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-white/10"
+                        key={idx}
+                        className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start"
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs font-semibold uppercase tracking-wider text-accentGold">
-                            {day.day} ({day.date})
-                          </span>
-                          <span className="text-xs text-white/50">{day.time}</span>
-                        </div>
-                        <h3 className="mt-2 font-medium text-white">{day.title}</h3>
-                        <ul className="mt-3 space-y-1.5 pl-1 text-sm text-white/70">
-                          {day.items.map((item, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accentGold/60" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                {/* Requirements */}
-                {detail.requirements && detail.requirements.length > 0 && (
-                  <section className="mt-10">
-                    <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
-                      Requirements
-                    </h2>
-                    <ul className="mt-4 space-y-3">
-                      {detail.requirements.map((req, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accentGold/10 text-accentGold">
-                            <Info className="h-3 w-3" aria-hidden />
-                          </span>
-                          {req}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                {/* Instructors */}
-                {(detail.instructors && detail.instructors.length > 0) || detail.instructor ? (
-                  <section className="mt-10">
-                    <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
-                      {detail.instructors && detail.instructors.length > 1 ? "Instructors" : "Instructor"}
-                    </h2>
-                    {detail.instructors && detail.instructors.length > 0 ? (
-                      <div className="mt-4 space-y-4">
-                        {detail.instructors.map((instructor, idx) => (
-                          <div
-                            key={idx}
-                            className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start"
-                          >
-                            {instructor.imageUrl ? (
-                              <Image
-                                src={instructor.imageUrl}
-                                alt={instructor.name}
-                                width={80}
-                                height={80}
-                                className="h-20 w-20 shrink-0 rounded-full object-cover bg-white/5"
-                              />
-                            ) : (
-                              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
-                                {instructor.name.charAt(0)}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="font-medium text-white">{instructor.name}</p>
-                              <p className="mt-0.5 text-xs text-accentGold/90">
-                                {instructor.credentials}
-                              </p>
-                              <p className="mt-3 text-sm leading-relaxed text-white/70">
-                                {instructor.bio}
-                              </p>
-                              {instructor.badges && instructor.badges.length > 0 && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {instructor.badges.map((badge) => (
-                                    <span
-                                      key={badge}
-                                      className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
-                                    >
-                                      {badge}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                        {instructor.imageUrl ? (
+                          <Image
+                            src={instructor.imageUrl}
+                            alt={instructor.name}
+                            width={80}
+                            height={80}
+                            className="h-20 w-20 shrink-0 rounded-full object-cover bg-white/5"
+                          />
+                        ) : (
+                          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
+                            {instructor.name.charAt(0)}
                           </div>
-                        ))}
-                      </div>
-                    ) : detail.instructor ? (
-                      <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start">
-                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
-                          {detail.instructor.name.charAt(0)}
-                        </div>
+                        )}
                         <div className="min-w-0">
-                          <p className="font-medium text-white">{detail.instructor.name}</p>
+                          <p className="font-medium text-white">{instructor.name}</p>
                           <p className="mt-0.5 text-xs text-accentGold/90">
-                            {detail.instructor.credentials}
+                            {instructor.credentials}
                           </p>
                           <p className="mt-3 text-sm leading-relaxed text-white/70">
-                            {detail.instructor.bio}
+                            {instructor.bio}
                           </p>
-                          {detail.instructor.badges && detail.instructor.badges.length > 0 && (
+                          {instructor.badges && instructor.badges.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {detail.instructor.badges.map((badge) => (
+                              {instructor.badges.map((badge) => (
                                 <span
                                   key={badge}
                                   className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
@@ -272,51 +244,80 @@ export default async function CourseDetailPage({ params }: Props) {
                           )}
                         </div>
                       </div>
-                    ) : null}
-                  </section>
+                    ))}
+                  </div>
+                ) : detail.instructor ? (
+                  <div className="mt-4 flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5 sm:flex-row sm:items-start">
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl font-semibold text-accentGold">
+                      {detail.instructor.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-white">{detail.instructor.name}</p>
+                      <p className="mt-0.5 text-xs text-accentGold/90">
+                        {detail.instructor.credentials}
+                      </p>
+                      <p className="mt-3 text-sm leading-relaxed text-white/70">
+                        {detail.instructor.bio}
+                      </p>
+                      {detail.instructor.badges && detail.instructor.badges.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {detail.instructor.badges.map((badge) => (
+                            <span
+                              key={badge}
+                              className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                            >
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : null}
+              </section>
+            ) : null}
 
-                {/* Related Courses */}
-                {relatedCourses.length > 0 && (
-                  <section className="mt-12">
-                    <div className="flex items-center justify-between gap-4">
-                      <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
-                        Related Courses
-                      </h2>
-                      <Link
-                        href="/courses"
-                        className="text-xs font-semibold uppercase tracking-wider text-accentGold transition hover:text-accentGold/80"
-                      >
-                        View all courses →
-                      </Link>
-                    </div>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      {relatedCourses.map((related) => (
-                        <Link
-                          key={related.slug}
-                          href={`/courses/${related.slug}`}
-                          className="group rounded-xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-accentGold/20 hover:bg-white/[0.04]"
-                        >
-                          <p className="font-medium text-white group-hover:text-accentGold/90">
-                            {related.title}
-                          </p>
-                          <p className="mt-1 text-sm text-white/60">{related.description}</p>
-                          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-accentGold">
-                            View details
-                            <ArrowRight className="h-3.5 w-3 transition group-hover:translate-x-0.5" />
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </>
+            {relatedCourses.length > 0 ? (
+              <section className="mt-12">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="font-[var(--font-playfair)] text-xl font-semibold tracking-tight text-white">
+                    Related Courses
+                  </h2>
+                  <Link
+                    href="/courses"
+                    className="text-xs font-semibold uppercase tracking-wider text-accentGold transition hover:text-accentGold/80"
+                  >
+                    View all courses →
+                  </Link>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {relatedCourses.map((related) => (
+                    <Link
+                      key={related.slug}
+                      href={`/courses/${related.slug}`}
+                      className="group rounded-xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-accentGold/20 hover:bg-white/[0.04]"
+                    >
+                      <p className="font-medium text-white group-hover:text-accentGold/90">
+                        {related.title}
+                      </p>
+                      <p className="mt-1 text-sm text-white/60">{related.description}</p>
+                      <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-accentGold">
+                        View details
+                        <ArrowRight className="h-3.5 w-3 transition group-hover:translate-x-0.5" />
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
             ) : null}
           </div>
 
           {/* Sidebar — Enquiry-first flow */}
           <aside className="scrollbar-brand lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-y-contain lg:self-start lg:[scrollbar-gutter:stable]">
-            <div className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.06] to-black/40 shadow-xl">
+            <div
+              id="course-enquiry"
+              className="rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.06] to-black/40 shadow-xl"
+            >
               <div className="rounded-t-2xl border-b border-white/5 bg-accentGold/10 px-5 py-4">
                 <h3 className="font-semibold text-white">Enquire about this course</h3>
                 <p className="mt-0.5 text-xs text-white/60">
@@ -330,54 +331,15 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
               <div className="p-5">
                 {detail?.pricing ? (
-                  <>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                      Total price
-                    </p>
-                    {detail.pricing.earlyBird && (
-                      <div className="mt-2">
-                        <div className="flex items-baseline gap-2">
-                          <p className="text-2xl font-semibold text-white">
-                            {detail.pricing.earlyBird.amount}
-                          </p>
-                          <span className="rounded-full border border-accentGold/50 bg-accentGold/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-accentGold">
-                            Early Bird
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-white/60">
-                          Until {detail.pricing.earlyBird.until}
-                        </p>
-                      </div>
-                    )}
-                    <div className="mt-3">
-                      <p className="text-xl font-semibold text-white/90">
-                        {detail.pricing.standard.amount}
-                      </p>
-                      <p className="mt-0.5 text-xs text-white/60">
-                        From {detail.pricing.standard.from}
-                      </p>
-                    </div>
-                    {detail.pricing.singleOccupancyUpgrade && (
-                      <p className="mt-2 text-xs text-white/60">
-                        Single occupancy upgrade: +{detail.pricing.singleOccupancyUpgrade}
-                      </p>
-                    )}
-                    {detail.packageIncludes && detail.packageIncludes.length > 0 && (
-                      <div className="mt-4 rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/70">
-                          Package includes:
-                        </p>
-                        <ul className="space-y-1.5">
-                          {detail.packageIncludes.map((item, i) => (
-                            <li key={i} className="flex items-center gap-2 text-xs text-white/70">
-                              <Check className="h-3 w-3 shrink-0 text-accentGold/80" aria-hidden />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
+                  <CourseEnquirySidebarPanel
+                    courseId={course.id}
+                    courseSlug={slug}
+                    pricing={detail.pricing}
+                    batches={detail.batches}
+                    packageIncludes={detail.packageIncludes}
+                    courseDuration={detail.duration}
+                    courseLocation={detail.location}
+                  />
                 ) : (
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
@@ -387,31 +349,41 @@ export default async function CourseDetailPage({ params }: Props) {
                     <p className="mt-1 text-xs text-accentGold">
                       Contact us for pricing and early-bird options.
                     </p>
+                    <CourseEnquiryFormSyncedToDetailBatch
+                      courseSlug={slug}
+                      courseId={course.id}
+                      batches={detail.batches}
+                      courseDuration={detail.duration}
+                      courseLocation={detail.location}
+                      batchPickerVariant="sidebar"
+                    />
+                    <p className="mt-4 text-center text-xs text-white/50">
+                      By enquiring, you agree to our{" "}
+                      <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">
+                        Terms
+                      </Link>
+                      .
+                    </p>
+                    <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                      <p className="text-sm font-medium text-white/90">Have questions?</p>
+                      <Link
+                        href="/contact"
+                        className="mt-1 flex items-center gap-2 text-sm text-accentGold transition hover:text-accentGold/80"
+                      >
+                        <MessageCircle className="h-4 w-4" aria-hidden />
+                        Contact support
+                      </Link>
+                    </div>
                   </>
                 )}
-                <CourseEnquiryForm courseSlug={slug} courseId={course.id} />
-                <p className="mt-4 text-center text-xs text-white/50">
-                  By enquiring, you agree to our{" "}
-                  <Link href="/terms" className="text-accentGold/80 underline hover:text-accentGold">
-                    Terms
-                  </Link>
-                  .
-                </p>
-                <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-                  <p className="text-sm font-medium text-white/90">Have questions?</p>
-                  <Link
-                    href="/contact"
-                    className="mt-1 flex items-center gap-2 text-sm text-accentGold transition hover:text-accentGold/80"
-                  >
-                    <MessageCircle className="h-4 w-4" aria-hidden />
-                    Contact support
-                  </Link>
-                </div>
               </div>
             </div>
           </aside>
         </div>
+        </CourseDetailBatchProvider>
       </div>
+
+      <MobileStickyEnquiryBar fixedCourse={course} variant="courseDetail" />
     </div>
   );
 }

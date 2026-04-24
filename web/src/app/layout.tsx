@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MetaPixel } from "@/components/MetaPixel";
 import { getSettings } from "@/lib/actions/settings";
 
 const inter = Inter({
@@ -75,6 +76,7 @@ export default async function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
         </div>
+        <MetaPixel />
         </AuthProvider>
       </body>
     </html>

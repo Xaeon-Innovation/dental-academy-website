@@ -7,6 +7,11 @@ export const enquirySubmitSchema = z.object({
   countryCode: z.string().max(8).optional(),
   interestedCourseSlug: z.string().optional(),
   interestedCourseId: z.string().optional(),
+  batchId: z.string().optional(),
+  batchLabel: z.string().optional(),
+  batchDateRange: z.string().optional(),
+  batchDuration: z.string().optional(),
+  batchLocation: z.string().optional(),
   message: z.string().max(3000).optional(),
   utm: z
     .object({

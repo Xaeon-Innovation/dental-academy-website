@@ -24,6 +24,11 @@ export interface Enquiry {
   countryCode?: string;
   interestedCourseSlug?: string;
   interestedCourseId?: string;
+  batchId?: string;
+  batchLabel?: string;
+  batchDateRange?: string;
+  batchDuration?: string;
+  batchLocation?: string;
   message?: string;
   utm?: EnquiryUtm;
   status: EnquiryStatus;

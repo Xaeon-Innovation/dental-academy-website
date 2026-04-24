@@ -1,5 +1,23 @@
-import type { Course, CoursePricing } from "@/types/course";
+import type { Course } from "@/types/course";
 import type { Registration } from "@/types/registration";
+
+/**
+ * Early bird cutoff: per-batch when the registration names a batch, otherwise course-level `pricing.earlyBird.until`.
+ */
+export function resolveEarlyBirdUntil(
+  course: Course | null | undefined,
+  registration?: Pick<Registration, "batchId">
+): string | undefined {
+  const pricingUntil = course?.pricing?.earlyBird?.until?.trim();
+  const batches = course?.batches;
+  if (batches?.length && registration?.batchId) {
+    const b = batches.find((x) => x.id === registration.batchId);
+    const batchUntil = b?.earlyBirdUntil?.trim();
+    if (batchUntil) return batchUntil;
+  }
+  if (pricingUntil) return pricingUntil;
+  return undefined;
+}
 
 const MONTH_NAMES: Record<string, number> = {
   january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2, april: 3, apr: 3,
@@ -72,15 +90,14 @@ export type RegistrationTotalBreakdown = {
  * Returns null when course has no pricing.
  */
 export function computeRegistrationTotal(
-  registration: Pick<Registration, "createdAt" | "singleOccupancyUpgrade">,
+  registration: Pick<Registration, "createdAt" | "singleOccupancyUpgrade" | "batchId">,
   course: Course | null | undefined
 ): RegistrationTotalResult | null {
   const pricing = course?.pricing;
   if (!pricing?.standard?.amount) return null;
 
-  const untilDate = pricing.earlyBird?.until
-    ? parsePricingDate(pricing.earlyBird.until)
-    : null;
+  const untilStr = resolveEarlyBirdUntil(course, registration);
+  const untilDate = untilStr ? parsePricingDate(untilStr) : null;
   const enrollmentDate = registration.createdAt
     ? new Date(registration.createdAt)
     : null;
@@ -122,7 +139,7 @@ export function computeRegistrationTotal(
  * Uses same logic as computeRegistrationTotal (early bird, single occupancy). Returns 0 when course has no pricing.
  */
 export function getBaseAmountCents(
-  registration: Pick<Registration, "createdAt" | "singleOccupancyUpgrade">,
+  registration: Pick<Registration, "createdAt" | "singleOccupancyUpgrade" | "batchId">,
   course: Course | null | undefined
 ): number {
   const result = computeRegistrationTotal(registration, course);
@@ -137,7 +154,7 @@ export function getBaseAmountCents(
 export function getRegistrationTotalBreakdown(
   registration: Pick<
     Registration,
-    "createdAt" | "singleOccupancyUpgrade" | "amountDueCents" | "extraFeesCents"
+    "createdAt" | "singleOccupancyUpgrade" | "amountDueCents" | "extraFeesCents" | "batchId"
   >,
   course: Course | null | undefined
 ): RegistrationTotalBreakdown | null {
@@ -155,9 +172,8 @@ export function getRegistrationTotalBreakdown(
     };
   }
 
-  const untilDate = pricing.earlyBird?.until
-    ? parsePricingDate(pricing.earlyBird.until)
-    : null;
+  const untilStr = resolveEarlyBirdUntil(course, registration);
+  const untilDate = untilStr ? parsePricingDate(untilStr) : null;
   const enrollmentDate = registration.createdAt
     ? new Date(registration.createdAt)
     : null;

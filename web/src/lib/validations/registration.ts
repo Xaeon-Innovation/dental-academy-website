@@ -16,6 +16,11 @@ export const registrationSchema = z
     // Course context (set by page)
     courseId: z.string().min(1, "Course is required"),
     courseSlug: z.string().min(1, "Course slug is required"),
+    batchId: z.string().optional(),
+    batchLabel: z.string().optional(),
+    batchDateRange: z.string().optional(),
+    batchDuration: z.string().optional(),
+    batchLocation: z.string().optional(),
     // Personal
     name: z.string().min(1, "Full name is required"),
     email: z.string().email("Valid email is required"),
@@ -59,6 +64,11 @@ export const minimalEnrollmentSchema = z
   .object({
     courseId: z.string().min(1, "Course is required"),
     courseSlug: z.string().min(1, "Course slug is required"),
+    batchId: z.string().optional(),
+    batchLabel: z.string().optional(),
+    batchDateRange: z.string().optional(),
+    batchDuration: z.string().optional(),
+    batchLocation: z.string().optional(),
     name: z.string().min(1, "Full name is required"),
     phone: z.string().min(1, "Phone number is required"),
     enrollmentNote: z.string().max(2000, "Message is too long").optional(),

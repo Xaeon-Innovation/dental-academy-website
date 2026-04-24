@@ -7,12 +7,16 @@ import Testimonials from "@/components/Testimonials";
 import { VideoTestimonialsSection } from "@/components/VideoTestimonialsSection";
 import { InstructorCardsInteractive } from "@/components/InstructorCardsInteractive";
 import { HomeCtaButtons } from "@/components/HomeCtaButtons";
+import { EarlyBirdTripleBanners } from "@/components/EarlyBirdTripleBanners";
+import { MobileStickyEnquiryBar } from "@/components/MobileStickyEnquiryBar";
+import { HomeHeroCtas } from "@/components/HomeHeroCtas";
 import { TextReveal } from "@/components/TextReveal";
 import { getInstructorsForPage } from "@/lib/actions/instructor";
 import { getHomeSettings } from "@/lib/actions/settings";
 import { getTestimonialsForDisplay } from "@/lib/actions/testimonial";
 import { getCourses } from "@/lib/actions/course";
 import type { HomeSettings } from "@/types/settings";
+import type { EnquiryCourseOption } from "@/components/EnquiryModal";
 
 // Always fetch latest home content (hero image, CTA, etc.) so admin uploads appear immediately
 export const dynamic = "force-dynamic";
@@ -26,6 +30,10 @@ export default async function HomePage() {
   ]);
 
   const home: HomeSettings = homeSettings ?? {};
+
+  const heroCtasIntroTitle =
+    home.heroCtasIntroTitle?.trim() ||
+    "Where your journey into focused, hands-on implant training begins.";
 
   const philosophyHeading = home.philosophyHeading || "Our Philosophy";
   const philosophyTitle =
@@ -41,43 +49,61 @@ export default async function HomePage() {
   const ctaBody =
     home.ctaBody ||
     "Join the Academy and build precision-driven implant skills with iPlace and iRestore.";
+
+  const openCoursesForEnquiry: EnquiryCourseOption[] = courses
+    .filter((course) => course.status === "open")
+    .map((course) => ({
+      id: course.id,
+      slug: course.slug,
+      title: course.title,
+      ...(course.batches?.length ? { batches: course.batches } : {}),
+      ...(course.duration?.trim() ? { courseDuration: course.duration } : {}),
+      ...(course.location?.trim() ? { courseLocation: course.location } : {}),
+    }));
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background pb-6 md:pb-0">
       <ScrollIndicator />
       {/* 1. Frame sequence — scroll-driven hero */}
       <HeroSequence />
 
-      {/* 2. Our Philosophy — starts after hero so the full sequence (frames + IPLACE + iRestore) is visible first */}
-      <section
-        id="philosophy"
-        className="relative z-30 mt-32 bg-background px-4 py-24 text-white md:mt-80 md:py-32"
-      >
-        <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
-          <FadeIn>
-            <div>
-              <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-                {philosophyHeading}
-              </TextReveal>
-              <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-                <TextReveal>{philosophyTitle}</TextReveal>
-              </h2>
-              <p className="mt-6 text-sm leading-relaxed text-white/70 md:text-base">
-                {philosophyBody}
-              </p>
-            </div>
-          </FadeIn>
-          <FadeIn delay={0.12}>
-            <div className="relative h-64 overflow-hidden rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80">
-              <Image
-                src={philosophyImageSrc}
-                alt="Kaleidoscope Dental Academy - Precision-driven implant dentistry"
-                fill
-                className="object-cover object-left"
-                priority
-              />
-            </div>
-          </FadeIn>
-        </div>
+      {/* 2. Hero CTAs + Philosophy (linked flow) */}
+      <section className="relative z-30 bg-background text-white">
+        {/* Hero CTAs (reveals when sequence finishes) */}
+        <HomeHeroCtas introTitle={heroCtasIntroTitle} availableCourses={openCoursesForEnquiry} />
+
+        {/* Our Philosophy — immediately follows CTAs */}
+        <section
+          id="philosophy"
+          className="px-4 pb-24 pt-20 md:pt-24 lg:pt-28 md:pb-32"
+        >
+          <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
+            <FadeIn>
+              <div>
+                <TextReveal className="block text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+                  {philosophyHeading}
+                </TextReveal>
+                <h2 className="mt-4 font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+                  <TextReveal>{philosophyTitle}</TextReveal>
+                </h2>
+                <p className="mt-6 text-sm leading-relaxed text-white/70 md:text-base">
+                  {philosophyBody}
+                </p>
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.12}>
+              <div className="relative h-64 overflow-hidden rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] md:h-80">
+                <Image
+                  src={philosophyImageSrc}
+                  alt="Kaleidoscope Dental Academy - Precision-driven implant dentistry"
+                  fill
+                  className="object-cover object-left"
+                  priority
+                />
+              </div>
+            </FadeIn>
+          </div>
+        </section>
       </section>
 
       {/* 3. Course Tracks */}
@@ -153,7 +179,7 @@ export default async function HomePage() {
                   </div>
                   <Link
                     href={`/courses/${track.slug}`}
-                    className="mt-6 inline-block text-xs font-semibold uppercase tracking-[0.18em] text-accentGold/80 hover:text-accentGold"
+                    className="mt-6 inline-flex items-center justify-center rounded-full border border-accentGold/70 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-accentGold transition hover:border-accentGold hover:bg-accentGold/10"
                   >
                     Explore track
                   </Link>
@@ -162,6 +188,10 @@ export default async function HomePage() {
               </FadeIn>
             ))}
           </div>
+
+          <FadeIn className="mt-14 md:mt-16">
+            <EarlyBirdTripleBanners courses={courses.filter((c) => c.status === "open")} />
+          </FadeIn>
         </div>
       </section>
 
@@ -215,20 +245,18 @@ export default async function HomePage() {
 
       {/* 4. CTA */}
       <section className="relative z-10 bg-background px-4 py-20 text-white md:py-28">
-        <FadeIn className="mx-auto max-w-3xl text-center overflow-visible">
+        <FadeIn className="mx-auto max-w-3xl text-center overflow-visible" id="start-your-journey">
           <h2 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl overflow-visible">
             <TextReveal>{ctaTitle}</TextReveal>
           </h2>
           <p className="mt-4 text-sm text-white/70 md:text-base">
             {ctaBody}
           </p>
-          <HomeCtaButtons
-            availableCourses={courses
-              .filter((course) => course.status === "open")
-              .map((course) => ({ id: course.id, slug: course.slug, title: course.title }))}
-          />
+          <HomeCtaButtons availableCourses={openCoursesForEnquiry} />
         </FadeIn>
       </section>
+
+      <MobileStickyEnquiryBar courses={courses} variant="home" />
     </main>
   );
 }

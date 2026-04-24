@@ -8,6 +8,8 @@ import { EnrollButton } from "@/components/EnrollButton";
 import { FadeIn } from "@/components/FadeIn";
 import { SpotsLeft } from "@/components/SpotsLeft";
 import { CourseEnquiryForm } from "@/components/CourseEnquiryForm";
+import { EarlyBirdTripleBanners } from "@/components/EarlyBirdTripleBanners";
+import { MobileStickyEnquiryBar } from "@/components/MobileStickyEnquiryBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRegistrationsByUserId } from "@/lib/actions/student";
 
@@ -36,6 +38,16 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
       cancelled = true;
     };
   }, [user?.uid]);
+
+  function primaryBatchAtAGlance(course: Course): { duration?: string; location?: string } {
+    const b0 = course.batches?.[0];
+    const duration = (b0?.duration || course.duration || "").trim();
+    const location = (b0?.location || course.location || "").trim();
+    return {
+      ...(duration ? { duration } : {}),
+      ...(location ? { location } : {}),
+    };
+  }
 
   useEffect(() => {
     if (!enquiryCourse) return;
@@ -70,22 +82,28 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
         aria-hidden
         className="pointer-events-none fixed inset-y-0 right-0 z-0 w-[min(70vw,520px)] max-w-[50vw] bg-[url('/images/logo/goldsolid.png')] bg-left bg-no-repeat bg-[length:200%_auto] opacity-[0.08] [mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_0%,black_22%,rgb(0_0_0_/_0.65)_48%,rgb(0_0_0_/_0.28)_72%,transparent_100%)] sm:w-[min(74vw,760px)] sm:max-w-none sm:opacity-[0.1] md:w-[min(78vw,920px)] md:opacity-[0.12]"
       />
-      <div className="relative z-10 min-h-[60vh] bg-transparent px-4 py-16 text-white md:py-20">
+      <div className="relative z-10 min-h-[60vh] bg-transparent px-4 py-16 pb-24 text-white md:py-20 md:pb-28">
         <div className="mx-auto max-w-4xl">
-        <FadeIn>
-          <header className="mb-10 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
-              Courses
-            </p>
-            <h1 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
-              Two intensive tracks. One academy.
-            </h1>
-            <p className="mt-2 text-sm text-white/70">
-              Course Provider: Kaleidoscope Dental Academy
-            </p>
-          </header>
+          <FadeIn>
+            <header className="mb-10 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentGold">
+                Courses
+              </p>
+              <h1 className="font-[var(--font-playfair)] text-3xl tracking-tight md:text-4xl">
+                Two intensive tracks. One academy.
+              </h1>
+              <p className="mt-2 text-sm text-white/70">
+                Course Provider: Kaleidoscope Dental Academy
+              </p>
+            </header>
+          </FadeIn>
+        </div>
+
+        <FadeIn className="mb-10">
+          <EarlyBirdTripleBanners courses={courses} />
         </FadeIn>
-        <div className="space-y-6">
+
+        <div className="mx-auto max-w-4xl space-y-6">
           {courses.length === 0 ? (
             <FadeIn>
               <div className="rounded-lg border border-white/10 bg-black/40 px-6 py-12 text-center">
@@ -143,6 +161,36 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
                     <p className="mt-2 text-sm text-white/70">
                       {course.description}
                     </p>
+                    {course.batches && course.batches.length > 0 ? (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {course.batches.slice(0, 2).map((batch) => (
+                            <span
+                              key={batch.id}
+                              className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[0.7rem] font-medium text-white/80"
+                            >
+                              {batch.label}: {batch.dateRange}
+                            </span>
+                          ))}
+                        </div>
+                        {(() => {
+                          const glance = primaryBatchAtAGlance(course);
+                          if (!glance.duration && !glance.location) return null;
+                          return (
+                            <p className="text-xs text-white/55">
+                              {glance.duration ? <span>{glance.duration}</span> : null}
+                              {glance.duration && glance.location ? <span className="text-white/35"> · </span> : null}
+                              {glance.location ? <span>{glance.location}</span> : null}
+                              {course.batches && course.batches.length > 1 ? (
+                                <span className="text-white/40"> · More cohorts on the course page</span>
+                              ) : null}
+                            </p>
+                          );
+                        })()}
+                      </div>
+                    ) : course.dateRange ? (
+                      <p className="mt-3 text-xs text-white/60">{course.dateRange}</p>
+                    ) : null}
                     {course.provider && (
                       <p className="mt-2 text-xs text-white/50">
                         Course Provider: {course.provider}
@@ -235,7 +283,6 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
             })
           )}
         </div>
-        </div>
       </div>
       {enquiryCourse && (
         <div
@@ -270,11 +317,16 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
             <CourseEnquiryForm
               courseId={enquiryCourse.id}
               courseSlug={enquiryCourse.slug}
+              batches={enquiryCourse.batches}
+              courseDuration={enquiryCourse.duration}
+              courseLocation={enquiryCourse.location}
               className="rounded-xl border border-accentGold/20 bg-accentGold/5 p-4"
             />
           </div>
         </div>
       )}
+
+      <MobileStickyEnquiryBar courses={courses} variant="courses" />
     </>
   );
 }

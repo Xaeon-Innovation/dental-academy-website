@@ -68,6 +68,11 @@ function normalizeEnquiry(id: string, data: Record<string, unknown>): Enquiry {
     countryCode: optionalString(data.countryCode),
     interestedCourseSlug: optionalString(data.interestedCourseSlug),
     interestedCourseId: optionalString(data.interestedCourseId),
+    batchId: optionalString(data.batchId),
+    batchLabel: optionalString(data.batchLabel),
+    batchDateRange: optionalString(data.batchDateRange),
+    batchDuration: optionalString(data.batchDuration),
+    batchLocation: optionalString(data.batchLocation),
     message: optionalString(data.message),
     assignedToAdminUid: optionalString(data.assignedToAdminUid),
     notes: optionalString(data.notes),
@@ -231,6 +236,11 @@ export async function submitEnquiry(input: unknown): Promise<
       ...(data.interestedCourseId?.trim()
         ? { interestedCourseId: data.interestedCourseId.trim() }
         : {}),
+      ...(data.batchId?.trim() ? { batchId: data.batchId.trim() } : {}),
+      ...(data.batchLabel?.trim() ? { batchLabel: data.batchLabel.trim() } : {}),
+      ...(data.batchDateRange?.trim() ? { batchDateRange: data.batchDateRange.trim() } : {}),
+      ...(data.batchDuration?.trim() ? { batchDuration: data.batchDuration.trim() } : {}),
+      ...(data.batchLocation?.trim() ? { batchLocation: data.batchLocation.trim() } : {}),
       ...(data.message?.trim() ? { message: data.message.trim() } : {}),
       ...(data.utm ? { utm: data.utm } : {}),
     };

@@ -10,6 +10,8 @@ export interface VideoTestimonialItem {
 }
 
 export interface HomeSettings {
+  /** Short line above the hero CTA buttons (before Our Philosophy). */
+  heroCtasIntroTitle?: string;
   philosophyHeading?: string;
   philosophyTitle?: string;
   philosophyBody?: string;

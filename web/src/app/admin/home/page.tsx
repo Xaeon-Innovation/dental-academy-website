@@ -45,6 +45,7 @@ export default function AdminHomeManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [home, setHome] = useState<HomeSettings>({
+    heroCtasIntroTitle: "",
     philosophyHeading: "",
     philosophyTitle: "",
     philosophyBody: "",
@@ -105,6 +106,7 @@ export default function AdminHomeManagementPage() {
         const settings = await getHomeSettings();
         if (!mounted) return;
         const next: HomeSettings = {
+          heroCtasIntroTitle: settings?.heroCtasIntroTitle ?? "",
           philosophyHeading: settings?.philosophyHeading ?? "",
           philosophyTitle: settings?.philosophyTitle ?? "",
           philosophyBody: settings?.philosophyBody ?? "",
@@ -218,6 +220,9 @@ export default function AdminHomeManagementPage() {
     setSuccess(null);
     setStatus("saving");
     const trimmed: HomeSettings = {
+      heroCtasIntroTitle:
+        home.heroCtasIntroTitle?.trim() ||
+        "Where your journey into focused, hands-on implant training begins.",
       philosophyHeading: home.philosophyHeading?.trim() || "Our Philosophy",
       philosophyTitle:
         home.philosophyTitle?.trim() ||
@@ -1080,6 +1085,38 @@ export default function AdminHomeManagementPage() {
 
       {activeTab === "content" && (
       <form onSubmit={handleSave} className="space-y-8">
+        {/* Hero CTAs — title above philosophy */}
+        <section className="rounded-lg border border-white/10 bg-black/40 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-[var(--font-playfair)] text-xl tracking-tight">
+                Hero CTAs (before philosophy)
+              </h2>
+              <p className="mt-1 text-xs text-white/60">
+                Headline shown above the &quot;View courses&quot; and &quot;Enquire now&quot; buttons, just before the
+                Our Philosophy block.
+              </p>
+            </div>
+            <span className="text-xs uppercase tracking-[0.18em] text-accentGold/80">
+              Intro
+            </span>
+          </div>
+          <div className="mt-4 max-w-2xl">
+            <label htmlFor="heroCtasIntroTitle" className="mb-1 block text-xs font-semibold text-white/70">
+              Introductory title
+            </label>
+            <input
+              id="heroCtasIntroTitle"
+              type="text"
+              value={home.heroCtasIntroTitle ?? ""}
+              onChange={(e) => updateField("heroCtasIntroTitle", e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+              placeholder="Where your journey into focused, hands-on implant training begins."
+              disabled={loading || saving}
+            />
+          </div>
+        </section>
+
         {/* Philosophy section */}
         <section className="rounded-lg border border-white/10 bg-black/40 p-6">
           <div className="flex items-start justify-between gap-4">
@@ -1088,7 +1125,7 @@ export default function AdminHomeManagementPage() {
                 Philosophy section
               </h2>
               <p className="mt-1 text-xs text-white/60">
-                This content appears under the &quot;Our Philosophy&quot; section on the home page.
+                This content appears in the Our Philosophy section on the home page (below the hero CTAs).
               </p>
             </div>
             <span className="text-xs uppercase tracking-[0.18em] text-accentGold/80">

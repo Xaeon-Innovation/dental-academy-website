@@ -70,6 +70,11 @@ async function completeEnrollmentFromDraft(
   return submitMinimalEnrollment({
     courseId: d.courseId,
     courseSlug: d.courseSlug,
+    ...(d.batchId ? { batchId: d.batchId } : {}),
+    ...(d.batchLabel ? { batchLabel: d.batchLabel } : {}),
+    ...(d.batchDateRange ? { batchDateRange: d.batchDateRange } : {}),
+    ...(d.batchDuration ? { batchDuration: d.batchDuration } : {}),
+    ...(d.batchLocation ? { batchLocation: d.batchLocation } : {}),
     name: d.name.trim(),
     phone: d.phone.trim(),
     enrollmentNote: d.enrollmentNote?.trim(),

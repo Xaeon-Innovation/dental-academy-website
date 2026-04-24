@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, X, Trash2, Upload } from "lucide-react";
 import type { CourseFormData } from "@/lib/validations/course";
-import type { Course } from "@/types/course";
+import type { Course, CourseBatch } from "@/types/course";
 import { getCourses } from "@/lib/actions/course";
 import { getInstructors } from "@/lib/actions/instructor";
 import type { Instructor } from "@/types/instructor";
@@ -17,6 +17,26 @@ interface CourseFormProps {
   onCancel?: () => void;
 }
 
+function parseDisplayDateRangeToStartEnd(dateRange: string | undefined): { start: string; end: string } {
+  const raw = (dateRange || "").trim();
+  if (!raw) return { start: "", end: "" };
+  const match = raw.match(/(\d{1,2}\s+\w+(?:\s+\d{4})?)\s*[–-]\s*(\d{1,2}\s+\w+(?:\s+\d{4})?)/i);
+  if (!match) return { start: "", end: "" };
+  return { start: match[1].replace(/\s+/g, " ").trim(), end: match[2].replace(/\s+/g, " ").trim() };
+}
+
+function formatDisplayDateRange(start: string, end: string): string {
+  const s = start.trim();
+  const e = end.trim();
+  if (!s || !e) return "";
+  const yearMatch = `${s} ${e}`.match(/\b(20\d{2})\b/);
+  const year = yearMatch?.[1] ?? String(new Date().getFullYear());
+  const stripYear = (v: string) => v.replace(new RegExp(`\\s*,?\\s*${year}\\s*$`, "i"), "").trim();
+  const left = stripYear(s);
+  const right = stripYear(e);
+  return `${left} – ${right}, ${year}`;
+}
+
 export default function CourseForm({ course, onSubmit, onCancel }: CourseFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -24,8 +44,18 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const [legacyStartDate, setLegacyStartDate] = useState<string>("");
+  const [legacyEndDate, setLegacyEndDate] = useState<string>("");
+  const [batchDateDrafts, setBatchDateDrafts] = useState<Record<string, { start: string; end: string }>>(() => {
+    const map: Record<string, { start: string; end: string }> = {};
+    for (const b of course?.batches || []) {
+      map[b.id] = parseDisplayDateRangeToStartEnd(b.dateRange);
+    }
+    return map;
+  });
+  const [agendaTargetBatchId, setAgendaTargetBatchId] = useState<string>(
+    course?.batches?.[0]?.id ?? ""
+  );
   const layoutImageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLayoutImage, setUploadingLayoutImage] = useState(false);
   const [layoutImagePreview, setLayoutImagePreview] = useState<string | null>(
@@ -57,20 +87,40 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     packageIncludes: course?.packageIncludes || [],
     relatedCourseSlugs: course?.relatedCourseSlugs || [],
     layoutImageUrl: course?.layoutImageUrl || "",
+    batches: course?.batches || [],
   });
 
-  // Parse dateRange to extract start and end dates
+  // Parse legacy course.dateRange to extract start/end for single-cohort editing (no batches).
   useEffect(() => {
     if (course?.dateRange) {
-      const match = course.dateRange.match(/(\d{1,2}\s+\w+)\s*[–-]\s*(\d{1,2}\s+\w+)/i);
-      if (match) {
+      const { start, end } = parseDisplayDateRangeToStartEnd(course.dateRange);
+      if (start && end) {
         setTimeout(() => {
-          setStartDate(match[1]);
-          setEndDate(match[2]);
+          setLegacyStartDate(start);
+          setLegacyEndDate(end);
         }, 0);
       }
     }
   }, [course]);
+
+  // Keep per-batch start/end drafts in sync with batch ids (add/remove/replace).
+  const batchesSignature = (form.batches || []).map((b) => `${b.id}:${b.dateRange || ""}`).join("|");
+  useEffect(() => {
+    const batches = form.batches || [];
+    const ids = new Set(batches.map((b) => b.id));
+    setBatchDateDrafts((prev) => {
+      const next: Record<string, { start: string; end: string }> = {};
+      for (const b of batches) {
+        const existing = prev[b.id];
+        next[b.id] = existing && (existing.start || existing.end) ? existing : parseDisplayDateRangeToStartEnd(b.dateRange);
+      }
+      return next;
+    });
+    setAgendaTargetBatchId((current) => {
+      if (current && ids.has(current)) return current;
+      return batches[0]?.id ?? "";
+    });
+  }, [batchesSignature]);
 
   // Load all courses for related courses selection
   useEffect(() => {
@@ -186,6 +236,37 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     }));
   }
 
+  function addBatch() {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `batch_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const next = [
+      ...(form.batches || []),
+      {
+        id,
+        label: "",
+        dateRange: "",
+        duration: (form.duration || "").trim(),
+        location: (form.location || "").trim(),
+        earlyBirdUntil: "",
+      },
+    ];
+    updateField("batches", next);
+  }
+
+  function updateBatch<K extends keyof CourseBatch>(index: number, field: K, value: CourseBatch[K]) {
+    const next = [...(form.batches || [])];
+    next[index] = { ...next[index], [field]: value };
+    updateField("batches", next);
+  }
+
+  function removeBatch(index: number) {
+    const next = [...(form.batches || [])];
+    next.splice(index, 1);
+    updateField("batches", next);
+  }
+
   function updateAgendaDay(index: number, field: string, value: string | string[]) {
     setForm((prev) => {
       const agenda = [...(prev.agenda || [])];
@@ -216,7 +297,21 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
 
   // Generate agenda days from date range and duration
   function generateAgendaDays() {
-    if (!startDate || !endDate || !form.duration) return;
+    const batches = form.batches || [];
+    const hasBatches = batches.length > 0;
+
+    const startDate = hasBatches
+      ? (agendaTargetBatchId ? batchDateDrafts[agendaTargetBatchId]?.start ?? "" : "")
+      : legacyStartDate;
+    const endDate = hasBatches
+      ? (agendaTargetBatchId ? batchDateDrafts[agendaTargetBatchId]?.end ?? "" : "")
+      : legacyEndDate;
+
+    const batchIndex = hasBatches ? batches.findIndex((b) => b.id === agendaTargetBatchId) : -1;
+    const durationForGen =
+      hasBatches && batchIndex >= 0 ? (batches[batchIndex]?.duration || "").trim() : (form.duration || "").trim();
+
+    if (!startDate || !endDate || !durationForGen) return;
 
     try {
       // Parse dates (assuming format like "15 May" or "15 May 2026")
@@ -239,9 +334,12 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
       const dayNames = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
       const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-      // Preserve existing agenda content if available
-      const existingAgenda = form.agenda || [];
-      const existingByDate = new Map(existingAgenda.map(a => [a.date, a]));
+      // Preserve existing agenda content if available (per-batch when generating for a cohort)
+      const existingAgenda =
+        hasBatches && batchIndex >= 0 && (batches[batchIndex]?.agenda?.length ?? 0) > 0
+          ? batches[batchIndex]!.agenda!
+          : form.agenda || [];
+      const existingByDate = new Map(existingAgenda.map((a) => [a.date, a]));
 
       let currentDate = new Date(start);
 
@@ -262,10 +360,20 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
       }
 
       setForm((prev) => ({ ...prev, agenda: days }));
-      
-      // Update dateRange
-      const dateRangeStr = `${startDate} – ${endDate}, ${currentYear}`;
-      updateField("dateRange", dateRangeStr);
+
+      // Update dateRange (legacy single-cohort) OR batch display range
+      const dateRangeStr = formatDisplayDateRange(startDate, endDate) || `${startDate} – ${endDate}, ${currentYear}`;
+      if (hasBatches && batchIndex >= 0) {
+        const nextBatches = [...batches];
+        nextBatches[batchIndex] = {
+          ...nextBatches[batchIndex],
+          dateRange: dateRangeStr,
+          agenda: days,
+        };
+        updateField("batches", nextBatches);
+      } else {
+        updateField("dateRange", dateRangeStr);
+      }
     } catch (err) {
       console.error("Error generating agenda days:", err);
     }
@@ -288,6 +396,14 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
       agenda: form.agenda?.filter((a) => a.day.trim() && a.title.trim()) || [],
       instructors: form.instructors?.filter((i) => i.name.trim()) || [],
     } as CourseFormData;
+
+    // One source of truth for early-bird cutoff when cohorts exist: `batches[].earlyBirdUntil`.
+    if ((cleanedForm.batches?.length ?? 0) > 0 && cleanedForm.pricing?.earlyBird) {
+      cleanedForm.pricing = {
+        ...cleanedForm.pricing,
+        earlyBird: { amount: cleanedForm.pricing.earlyBird.amount },
+      };
+    }
 
     setLoading(true);
     const result = await onSubmit(cleanedForm);
@@ -458,94 +574,106 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
         </div>
       </section>
 
-      {/* Dates & Location */}
+      {/* Capacity (course-level) + legacy dates when not using batches */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
-          Dates & Location
+          Capacity & scheduling (course-level)
         </h2>
+        <p className="text-xs text-white/60">
+          If you add <span className="text-white/80">Batches</span> below, put each cohort&apos;s dates, duration, and location on the batch.
+          Keep this section for overall capacity (and optional legacy fields if you are not using batches yet).
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="startDate" className="mb-1 block text-xs text-white/70">
-              Start Date
-            </label>
-            <input
-              id="startDate"
-              type="text"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                if (endDate && form.duration) {
-                  setTimeout(() => generateAgendaDays(), 100);
-                }
-              }}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-              placeholder="15 May"
-            />
-            <p className="mt-1 text-xs text-white/50">Format: &quot;15 May&quot; or &quot;15 May 2026&quot;</p>
-          </div>
-          <div>
-            <label htmlFor="endDate" className="mb-1 block text-xs text-white/70">
-              End Date
-            </label>
-            <input
-              id="endDate"
-              type="text"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                if (startDate && form.duration) {
-                  setTimeout(() => generateAgendaDays(), 100);
-                }
-              }}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-              placeholder="22 May"
-            />
-            <p className="mt-1 text-xs text-white/50">Format: &quot;22 May&quot; or &quot;22 May 2026&quot;</p>
-          </div>
-          <div>
-            <label htmlFor="dateRange" className="mb-1 block text-xs text-white/70">
-              Date Range (Display)
-            </label>
-            <input
-              id="dateRange"
-              type="text"
-              value={form.dateRange || ""}
-              onChange={(e) => updateField("dateRange", e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-              placeholder="15 May – 22 May, 2026"
-            />
-            <p className="mt-1 text-xs text-white/50">Auto-generated from start/end dates</p>
-          </div>
-          <div>
-            <label htmlFor="duration" className="mb-1 block text-xs text-white/70">
-              Duration
-            </label>
-            <input
-              id="duration"
-              type="text"
-              value={form.duration || ""}
-              onChange={(e) => {
-                updateField("duration", e.target.value);
-                if (startDate && endDate) {
-                  setTimeout(() => generateAgendaDays(), 100);
-                }
-              }}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-              placeholder="8 Days (3 days theory, 3 days clinical hands-on)"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="location" className="mb-1 block text-xs text-white/70">
-              Location
-            </label>
-            <input
-              id="location"
-              type="text"
-              value={form.location || ""}
-              onChange={(e) => updateField("location", e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-            />
-          </div>
+          {!(form.batches && form.batches.length > 0) ? (
+            <>
+              <div>
+                <label htmlFor="legacyStartDate" className="mb-1 block text-xs text-white/70">
+                  Start Date
+                </label>
+                <input
+                  id="legacyStartDate"
+                  type="text"
+                  value={legacyStartDate}
+                  onChange={(e) => {
+                    setLegacyStartDate(e.target.value);
+                    if (legacyEndDate && form.duration) {
+                      setTimeout(() => generateAgendaDays(), 100);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                  placeholder="15 May"
+                />
+                <p className="mt-1 text-xs text-white/50">Format: &quot;15 May&quot; or &quot;15 May 2026&quot;</p>
+              </div>
+              <div>
+                <label htmlFor="legacyEndDate" className="mb-1 block text-xs text-white/70">
+                  End Date
+                </label>
+                <input
+                  id="legacyEndDate"
+                  type="text"
+                  value={legacyEndDate}
+                  onChange={(e) => {
+                    setLegacyEndDate(e.target.value);
+                    if (legacyStartDate && form.duration) {
+                      setTimeout(() => generateAgendaDays(), 100);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                  placeholder="22 May"
+                />
+                <p className="mt-1 text-xs text-white/50">Format: &quot;22 May&quot; or &quot;22 May 2026&quot;</p>
+              </div>
+              <div>
+                <label htmlFor="dateRange" className="mb-1 block text-xs text-white/70">
+                  Date Range (Display)
+                </label>
+                <input
+                  id="dateRange"
+                  type="text"
+                  value={form.dateRange || ""}
+                  onChange={(e) => updateField("dateRange", e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                  placeholder="15 May – 22 May, 2026"
+                />
+                <p className="mt-1 text-xs text-white/50">Auto-generated from start/end dates when you generate agenda days</p>
+              </div>
+              <div>
+                <label htmlFor="duration" className="mb-1 block text-xs text-white/70">
+                  Duration
+                </label>
+                <input
+                  id="duration"
+                  type="text"
+                  value={form.duration || ""}
+                  onChange={(e) => {
+                    updateField("duration", e.target.value);
+                    if (legacyStartDate && legacyEndDate) {
+                      setTimeout(() => generateAgendaDays(), 100);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                  placeholder="8 Days (3 days theory, 3 days clinical hands-on)"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="location" className="mb-1 block text-xs text-white/70">
+                  Location
+                </label>
+                <input
+                  id="location"
+                  type="text"
+                  value={form.location || ""}
+                  onChange={(e) => updateField("location", e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="sm:col-span-2 rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70">
+              This course uses <span className="text-white/85">Batches</span>. Dates, duration, and location should be edited per batch (below).
+            </div>
+          )}
           <div>
             <label htmlFor="maxParticipants" className="mb-1 block text-xs text-white/70">
               Max Delegates
@@ -572,6 +700,132 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
               placeholder="Open Registration"
             />
           </div>
+        </div>
+      </section>
+
+      {/* Batches (multiple dates per course) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
+            Batches
+          </h2>
+          <button
+            type="button"
+            onClick={addBatch}
+            className="flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs text-white/70 transition hover:bg-white/10"
+          >
+            <Plus className="h-3 w-3" />
+            Add Batch
+          </button>
+        </div>
+        <p className="text-xs text-white/60">
+          Add multiple cohorts for the same course (e.g. May + September). Each batch can have its own dates, duration, location, and Early Bird cutoff.
+        </p>
+        <div className="space-y-3">
+          {(form.batches || []).length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-sm text-white/60">
+              No batches yet. Add one to enable multiple cohorts.
+            </div>
+          ) : (
+            (form.batches || []).map((batch, index: number) => (
+              <div key={batch.id ?? index} className="rounded-lg border border-white/10 bg-black/40 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-white">
+                    Batch {index + 1}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => removeBatch(index)}
+                    className="rounded p-1 text-white/70 transition hover:bg-red-500/20 hover:text-red-400"
+                    aria-label="Remove batch"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">Label *</label>
+                    <input
+                      type="text"
+                      value={batch.label || ""}
+                      onChange={(e) => updateBatch(index, "label", e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="May 2026"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">Early Bird Until</label>
+                    <input
+                      type="text"
+                      value={batch.earlyBirdUntil || ""}
+                      onChange={(e) => updateBatch(index, "earlyBirdUntil", e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="1 July 2026"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">Start Date</label>
+                    <input
+                      type="text"
+                      value={batchDateDrafts[batch.id]?.start ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBatchDateDrafts((prev) => ({ ...prev, [batch.id]: { start: v, end: prev[batch.id]?.end ?? "" } }));
+                      }}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="15 May"
+                    />
+                    <p className="mt-1 text-xs text-white/45">Used for agenda generation</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">End Date</label>
+                    <input
+                      type="text"
+                      value={batchDateDrafts[batch.id]?.end ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBatchDateDrafts((prev) => ({ ...prev, [batch.id]: { start: prev[batch.id]?.start ?? "", end: v } }));
+                      }}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="22 May"
+                    />
+                    <p className="mt-1 text-xs text-white/45">Used for agenda generation</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">Duration</label>
+                    <input
+                      type="text"
+                      value={batch.duration || ""}
+                      onChange={(e) => updateBatch(index, "duration", e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="8 Days (3 days theory, 3 days clinical hands-on)"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-white/70">Location</label>
+                    <input
+                      type="text"
+                      value={batch.location || ""}
+                      onChange={(e) => updateBatch(index, "location", e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="Cairo"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs text-white/70">Date Range (Display) *</label>
+                    <input
+                      type="text"
+                      value={batch.dateRange || ""}
+                      onChange={(e) => updateBatch(index, "dateRange", e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                      placeholder="15 May – 22 May, 2026"
+                    />
+                    <p className="mt-1 text-xs text-white/45">Tip: click Generate Days in Course Agenda (choose this batch) to auto-fill this from start/end.</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -611,44 +865,54 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
               id="earlyBirdAmount"
               type="text"
               value={form.pricing?.earlyBird?.amount || ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                const hasBatchCohorts = (form.batches?.length ?? 0) > 0;
                 updateField("pricing", {
                   ...form.pricing,
-                  earlyBird: {
-                    ...form.pricing?.earlyBird,
-                    amount: e.target.value,
-                    until: form.pricing?.earlyBird?.until || "",
-                  },
+                  earlyBird: hasBatchCohorts
+                    ? { amount: e.target.value }
+                    : {
+                        amount: e.target.value,
+                        until: form.pricing?.earlyBird?.until || "",
+                      },
                   standard: form.pricing?.standard || { amount: "", from: "" },
-                })
-              }
+                });
+              }}
               className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
               placeholder="£6,995"
             />
           </div>
-          <div>
-            <label htmlFor="earlyBirdUntil" className="mb-1 block text-xs text-white/70">
-              Early Bird Until
-            </label>
-            <input
-              id="earlyBirdUntil"
-              type="text"
-              value={form.pricing?.earlyBird?.until || ""}
-              onChange={(e) =>
-                updateField("pricing", {
-                  ...form.pricing,
-                  earlyBird: {
-                    ...form.pricing?.earlyBird,
-                    amount: form.pricing?.earlyBird?.amount || "",
-                    until: e.target.value,
-                  },
-                  standard: form.pricing?.standard || { amount: "", from: "" },
-                })
-              }
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
-              placeholder="31 March 2026"
-            />
-          </div>
+          {form.batches && form.batches.length > 0 ? (
+            <div className="sm:col-span-2 rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/65">
+              <span className="font-medium text-white/80">Early bird deadline</span> is set per batch above
+              (Early Bird Until on each cohort). The course-level pricing block only needs the early-bird{" "}
+              <span className="text-white/80">amount</span>.
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="earlyBirdUntil" className="mb-1 block text-xs text-white/70">
+                Early Bird Until
+              </label>
+              <input
+                id="earlyBirdUntil"
+                type="text"
+                value={form.pricing?.earlyBird?.until || ""}
+                onChange={(e) =>
+                  updateField("pricing", {
+                    ...form.pricing,
+                    earlyBird: {
+                      ...form.pricing?.earlyBird,
+                      amount: form.pricing?.earlyBird?.amount || "",
+                      until: e.target.value,
+                    },
+                    standard: form.pricing?.standard || { amount: "", from: "" },
+                  })
+                }
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+                placeholder="31 March 2026"
+              />
+            </div>
+          )}
           <div>
             <label htmlFor="standardAmount" className="mb-1 block text-xs text-white/70">
               Standard Amount *
@@ -831,11 +1095,30 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
 
       {/* Course Agenda */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accentGold">
             Course Agenda
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            {(form.batches || []).length > 0 ? (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <label className="text-xs text-white/60" htmlFor="agendaTargetBatch">
+                  Generate for batch
+                </label>
+                <select
+                  id="agendaTargetBatch"
+                  value={agendaTargetBatchId}
+                  onChange={(e) => setAgendaTargetBatchId(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-accentGold/50 focus:outline-none sm:w-56"
+                >
+                  {(form.batches || []).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.label?.trim() ? b.label : b.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={generateAgendaDays}
@@ -853,9 +1136,19 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
             </button>
           </div>
         </div>
-        {(!form.agenda || form.agenda.length === 0) && startDate && endDate && (
+        {(!form.agenda || form.agenda.length === 0) &&
+          ((form.batches || []).length > 0
+            ? Boolean(agendaTargetBatchId && batchDateDrafts[agendaTargetBatchId]?.start && batchDateDrafts[agendaTargetBatchId]?.end)
+            : Boolean(legacyStartDate && legacyEndDate)) && (
           <div className="rounded-lg border border-accentGold/30 bg-accentGold/10 px-4 py-3 text-sm text-accentGold">
-            Set start date, end date, and duration, then click &quot;Generate Days&quot; to auto-create agenda days.
+            {(form.batches || []).length > 0 ? (
+              <>
+                Set the selected batch&apos;s start/end dates and duration, then click &quot;Generate Days&quot; to auto-create agenda days (and update that
+                batch&apos;s display date range).
+              </>
+            ) : (
+              <>Set start date, end date, and duration, then click &quot;Generate Days&quot; to auto-create agenda days.</>
+            )}
           </div>
         )}
         <div className="space-y-4">

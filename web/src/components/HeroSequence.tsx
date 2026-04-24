@@ -18,6 +18,7 @@ export default function HeroSequence() {
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const frames = useMemo(
     () => Array.from({ length: FRAME_COUNT }, (_, i) => FRAME_PATH(i)),
@@ -53,8 +54,8 @@ export default function HeroSequence() {
       renderHeight = (canvasWidth * imgHeight) / imgWidth;
     }
 
-    // Draw sequence slightly smaller so it doesn’t dominate the viewport
-    const sequenceScale = 0.88;
+    // Mobile: draw smaller to reduce visual crowding.
+    const sequenceScale = isMobile ? 0.74 : 0.88;
     renderWidth *= sequenceScale;
     renderHeight *= sequenceScale;
     const x = (canvasWidth - renderWidth) / 2;
@@ -99,10 +100,76 @@ export default function HeroSequence() {
   }, [currentFrame, images]);
 
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
     if (!isLoaded || !wrapRef.current || !stickyRef.current) return;
 
     const ctx = gsap.context(() => {
       const frameState = { frame: 0 };
+
+      if (isMobile) {
+        // Mobile: pin hero until sequence completes, then release to next sections.
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: "#pin-hero",
+            start: "top top",
+            endTrigger: "#pin-hero-wrap",
+            end: "bottom top",
+            scrub: 0.45,
+            pin: true,
+            pinSpacing: true,
+          },
+        });
+
+        tl.to(
+          frameState,
+          {
+            frame: FRAME_COUNT - 1,
+            ease: "none",
+            duration: 1,
+            onUpdate: () => {
+              renderFrame(frameState.frame);
+            },
+          },
+          0
+        );
+
+        tl.fromTo(
+          ".hero-text-start",
+          { autoAlpha: 0, y: -60, scale: 0.96, transformOrigin: "left top" },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            ease: "power2.out",
+            duration: 0.22,
+            transformOrigin: "left top",
+          },
+          0.12
+        );
+
+        tl.fromTo(
+          ".hero-text-end",
+          { autoAlpha: 0, y: 60, scale: 0.96, transformOrigin: "right bottom" },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.22,
+            ease: "power2.out",
+            transformOrigin: "right bottom",
+          },
+          0.38
+        );
+
+        return;
+      }
 
       // IMPORTANT: Do not add onUpdate here that sets autoAlpha: 0 on the sticky. Canvas must stay visible so Philosophy can slide over it.
       const tl = gsap.timeline({
@@ -161,7 +228,7 @@ export default function HeroSequence() {
     }, containerRef);
 
     return () => ctx.revert();
-  }, [isLoaded]);
+  }, [isLoaded, isMobile]);
 
   useEffect(() => {
     if (isLoaded) {
@@ -176,40 +243,47 @@ export default function HeroSequence() {
       className="relative z-0 bg-background"
       aria-label="Implant sequence animation"
     >
-      <div ref={wrapRef} id="pin-hero-wrap" className="h-[120vh] sm:h-[160vh] md:h-[200vh] lg:h-[240vh]">
+      <div
+        ref={wrapRef}
+        id="pin-hero-wrap"
+        className={
+          isMobile
+            ? "h-[200vh]"
+            : "h-[110vh] sm:h-[150vh] md:h-[200vh] lg:h-[240vh]"
+        }
+      >
         <div
           id="pin-hero"
           ref={stickyRef}
-          className="sticky top-0 flex h-screen items-stretch justify-stretch overflow-hidden bg-black"
+          className={
+            isMobile
+              ? "relative flex h-full items-stretch justify-stretch overflow-hidden bg-black"
+              : "sticky top-0 flex h-screen items-stretch justify-stretch overflow-hidden bg-black"
+          }
         >
           <canvas
             ref={canvasRef}
             className="relative block h-full w-full object-cover"
           />
           <div className="pointer-events-none absolute inset-0 z-10">
-            <div
-              className="hero-text-start absolute left-4 top-24 max-w-md text-left md:left-12 md:top-20 lg:left-16 lg:top-24"
-              style={{ opacity: 0, visibility: "hidden" }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accentGold">
+            <div className="hero-text-start absolute left-4 top-20 max-w-md text-left opacity-0 invisible md:left-12 md:top-20 lg:left-16 lg:top-24">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accentGold sm:text-sm">
                 iPlace
               </p>
-              <h1 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-accentGold md:text-4xl lg:text-5xl">
+              <h1 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-accentGold sm:text-3xl md:text-4xl lg:text-5xl">
                 The Foundation
               </h1>
             </div>
-            <div
-              className="hero-text-end absolute bottom-10 right-4 max-w-md text-right md:bottom-16 md:right-12 lg:right-16"
-              style={{ opacity: 0, visibility: "hidden" }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
+            <div className="hero-text-end absolute bottom-20 right-4 max-w-md text-right opacity-0 invisible md:bottom-16 md:right-12 lg:right-16">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70 sm:text-sm">
                 iRestore
               </p>
-              <h2 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-white md:text-4xl lg:text-5xl">
+              <h2 className="font-[var(--font-playfair)] mt-2 text-2xl tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl">
                 The Perfection
               </h2>
             </div>
           </div>
+
           {!isLoaded && (
             <div className="pointer-events-none absolute inset-0 z-20">
               <LoadingScreen />
