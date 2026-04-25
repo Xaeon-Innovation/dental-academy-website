@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -22,6 +23,48 @@ import { EarlyBirdCourseBanners } from "@/components/EarlyBirdCourseBanners";
 import { CourseBatchesSummary } from "@/components/CourseBatchesSummary";
 
 type Props = { params: Promise<{ slug: string }> };
+
+function seoDescription(input: string | undefined, fallback: string): string {
+  const text = (input ?? "").trim();
+  if (!text) return fallback;
+  // Keep it long enough to avoid “too short”, but not overly long.
+  return text.length > 170 ? `${text.slice(0, 167).trimEnd()}…` : text;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const course = await getCourseBySlug(slug);
+
+  if (!course || course.status !== "open") {
+    return {
+      title: "Course not found | Kaleidoscope Dental Academy",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${course.title} | Kaleidoscope Dental Academy`;
+  const description = seoDescription(
+    course.description,
+    "Hands-on dental implant education with structured training, real-world protocols, and focused outcomes."
+  );
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `/courses/${course.slug}`,
+      ...(course.layoutImageUrl?.trim() ? { images: [{ url: course.layoutImageUrl.trim() }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 export default async function CourseDetailPage({ params }: Props) {
   const { slug } = await params;

@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
+
 type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  return {
+    title: `Blog | ${slug} | Kaleidoscope Dental Academy`,
+    description: "Article coming soon.",
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params;
