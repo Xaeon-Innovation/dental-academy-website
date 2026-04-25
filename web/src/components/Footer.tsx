@@ -154,14 +154,22 @@ export default async function Footer() {
               <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-white/40">
                 Website developed by
               </span>
-              <Image
-                src="/images/logo/devlogo.png"
-                alt="Website developed by XAEON"
-                width={84}
-                height={24}
-                className="h-5 w-auto object-contain"
-                unoptimized
-              />
+              <a
+                href="https://xaeons.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-sm focus:outline-none focus:ring-2 focus:ring-accentGold/50 focus:ring-offset-2 focus:ring-offset-transparent"
+                aria-label="XAEONS website"
+              >
+                <Image
+                  src="/images/logo/devlogo.png"
+                  alt="XAEONS"
+                  width={84}
+                  height={24}
+                  className="h-5 w-auto object-contain"
+                  unoptimized
+                />
+              </a>
             </div>
           </div>
           <p className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-white/35">
