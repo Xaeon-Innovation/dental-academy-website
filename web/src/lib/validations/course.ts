@@ -5,7 +5,7 @@ const courseAgendaDaySchema = z.object({
   date: z.string().min(1, "Date is required"),
   title: z.string().min(1, "Title is required"),
   time: z.string().min(1, "Time is required"),
-  items: z.array(z.string().min(1, "Item cannot be empty")).min(1, "At least one item is required"),
+  items: z.array(z.string().min(1, "Item cannot be empty")).default([]),
 });
 
 const courseInstructorSchema = z.object({

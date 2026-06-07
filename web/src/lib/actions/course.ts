@@ -17,8 +17,16 @@ import {
 import { revalidatePath } from "next/cache";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { ZodError } from "zod";
 import { courseSchema, type CourseFormData } from "@/lib/validations/course";
 import type { Course, CourseCreatePayload, CourseUpdatePayload } from "@/types/course";
+
+function courseValidationError(err: unknown): string {
+  if (err instanceof ZodError) {
+    return err.issues[0]?.message ?? "Invalid course data.";
+  }
+  return "Invalid course data.";
+}
 
 function omitUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   return Object.fromEntries(
@@ -164,8 +172,8 @@ export async function createCourse(data: CourseFormData): Promise<{ success: tru
     revalidatePath("/courses");
     return { success: true, id: ref.id };
   } catch (err) {
-    if (err instanceof Error && err.name === "ZodError") {
-      return { success: false, error: "Invalid course data." };
+    if (err instanceof ZodError) {
+      return { success: false, error: courseValidationError(err) };
     }
     const message = err instanceof Error ? err.message : "Failed to create course";
     return { success: false, error: message };
@@ -196,8 +204,8 @@ export async function updateCourse(
     revalidatePath("/courses");
     return { success: true };
   } catch (err) {
-    if (err instanceof Error && err.name === "ZodError") {
-      return { success: false, error: "Invalid course data." };
+    if (err instanceof ZodError) {
+      return { success: false, error: courseValidationError(err) };
     }
     const message = err instanceof Error ? err.message : "Failed to update course";
     return { success: false, error: message };

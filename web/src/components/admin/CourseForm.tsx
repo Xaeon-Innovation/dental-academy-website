@@ -10,6 +10,7 @@ import { getCourses } from "@/lib/actions/course";
 import { getInstructors } from "@/lib/actions/instructor";
 import type { Instructor } from "@/types/instructor";
 import { uploadCourseLayoutImage } from "@/lib/actions/upload";
+import { cleanAgendaDays } from "@/lib/course-agenda-by-batch";
 
 interface CourseFormProps {
   course?: Course | null;
@@ -386,6 +387,18 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
     setError(null);
     setFieldErrors({});
 
+    const cleanedAgenda = cleanAgendaDays(form.agenda);
+    const hasBatches = Boolean(form.batches?.length);
+    const cleanedBatches = hasBatches
+      ? (form.batches ?? []).map((batch) => {
+          const agenda =
+            agendaTargetBatchId && batch.id === agendaTargetBatchId
+              ? cleanedAgenda
+              : cleanAgendaDays(batch.agenda);
+          return { ...batch, agenda };
+        })
+      : form.batches;
+
     // Clean up empty strings from arrays
     const cleanedForm: CourseFormData = {
       ...form,
@@ -393,7 +406,8 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
       learningPoints: form.learningPoints?.filter((s) => s.trim()) || [],
       packageIncludes: form.packageIncludes?.filter((s) => s.trim()) || [],
       requirements: form.requirements?.filter((s) => s.trim()) || [],
-      agenda: form.agenda?.filter((a) => a.day.trim() && a.title.trim()) || [],
+      agenda: cleanedAgenda,
+      batches: cleanedBatches,
       instructors: form.instructors?.filter((i) => i.name.trim()) || [],
     } as CourseFormData;
 
