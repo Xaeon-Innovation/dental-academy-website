@@ -62,6 +62,9 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
   const [layoutImagePreview, setLayoutImagePreview] = useState<string | null>(
     course?.layoutImageUrl || null
   );
+  const [limitMaxDelegates, setLimitMaxDelegates] = useState(
+    Boolean(course?.maxParticipants)
+  );
 
   const [form, setForm] = useState<Partial<CourseFormData>>({
     title: course?.title || "",
@@ -409,6 +412,8 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
       agenda: cleanedAgenda,
       batches: cleanedBatches,
       instructors: form.instructors?.filter((i) => i.name.trim()) || [],
+      // Unlimited capacity: omit the field so updateCourse can delete it from Firestore
+      maxParticipants: limitMaxDelegates ? form.maxParticipants : undefined,
     } as CourseFormData;
 
     // One source of truth for early-bird cutoff when cohorts exist: `batches[].earlyBirdUntil`.
@@ -689,6 +694,15 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
             </div>
           )}
           <div>
+            <label className="mb-2 flex items-center gap-2 text-xs text-white/70">
+              <input
+                type="checkbox"
+                checked={limitMaxDelegates}
+                onChange={(e) => setLimitMaxDelegates(e.target.checked)}
+                className="rounded border-white/10 bg-black/40 text-accentGold focus:ring-accentGold/50"
+              />
+              Limit max delegates
+            </label>
             <label htmlFor="maxParticipants" className="mb-1 block text-xs text-white/70">
               Max Delegates
             </label>
@@ -698,8 +712,14 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
               min="1"
               value={form.maxParticipants || ""}
               onChange={(e) => updateField("maxParticipants", e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none"
+              disabled={!limitMaxDelegates}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             />
+            {!limitMaxDelegates && (
+              <p className="mt-1 text-xs text-white/50">
+                No capacity limit — spots left will be hidden on the public courses page.
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="registrationBadge" className="mb-1 block text-xs text-white/70">

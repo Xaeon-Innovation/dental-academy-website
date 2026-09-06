@@ -13,6 +13,7 @@ import {
   where,
   serverTimestamp,
   Timestamp,
+  deleteField,
 } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { db, COLLECTIONS } from "@/lib/firebase/firestore";
@@ -198,10 +199,17 @@ export async function updateCourse(
       ...validated,
       updatedAt: serverTimestamp(),
     });
+
+    // Clearing the number input / disabling the limit must remove the Firestore field;
+    // omitUndefined would otherwise leave the previous maxParticipants value in place.
+    if (validated.maxParticipants === undefined) {
+      payload.maxParticipants = deleteField();
+    }
     
     await updateDoc(ref, payload);
 
     revalidatePath("/courses");
+    revalidatePath(`/courses/${validated.slug}`);
     return { success: true };
   } catch (err) {
     if (err instanceof ZodError) {
