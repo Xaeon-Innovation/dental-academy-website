@@ -693,36 +693,70 @@ export default function CourseForm({ course, onSubmit, onCancel }: CourseFormPro
               This course uses <span className="text-white/85">Batches</span>. Dates, duration, and location should be edited per batch (below).
             </div>
           )}
-          <div>
-            <label className="mb-2 flex items-center gap-2 text-xs text-white/70">
+          <div
+            className={`rounded-lg border px-4 py-3 transition-colors ${
+              limitMaxDelegates
+                ? "border-accentGold/35 bg-accentGold/[0.06]"
+                : "border-white/10 bg-black/30"
+            }`}
+          >
+            <label
+              htmlFor="limitMaxDelegates"
+              className="flex cursor-pointer items-start gap-3"
+            >
               <input
+                id="limitMaxDelegates"
                 type="checkbox"
                 checked={limitMaxDelegates}
                 onChange={(e) => setLimitMaxDelegates(e.target.checked)}
-                className="rounded border-white/10 bg-black/40 text-accentGold focus:ring-accentGold/50"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-black/40 text-accentGold focus:ring-accentGold/50"
               />
-              Limit max delegates
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-white">
+                  Limit max delegates
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-white/55">
+                  {limitMaxDelegates
+                    ? "Shows remaining spots on the public courses page."
+                    : "Unlimited capacity — spots left stay hidden publicly."}
+                </span>
+              </span>
             </label>
-            <label htmlFor="maxParticipants" className="mb-1 block text-xs text-white/70">
-              Max Delegates
-            </label>
-            <input
-              id="maxParticipants"
-              type="number"
-              min="1"
-              value={form.maxParticipants || ""}
-              onChange={(e) => updateField("maxParticipants", e.target.value ? parseInt(e.target.value) : undefined)}
-              disabled={!limitMaxDelegates}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/40 focus:border-accentGold/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            {!limitMaxDelegates && (
-              <p className="mt-1 text-xs text-white/50">
-                No capacity limit — spots left will be hidden on the public courses page.
-              </p>
-            )}
+
+            <div
+              className={`grid transition-all duration-300 ease-out ${
+                limitMaxDelegates
+                  ? "mt-3 grid-rows-[1fr] opacity-100"
+                  : "mt-0 grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <label
+                  htmlFor="maxParticipants"
+                  className="mb-1.5 block text-xs text-white/70"
+                >
+                  Max Delegates
+                </label>
+                <input
+                  id="maxParticipants"
+                  type="number"
+                  min="1"
+                  value={form.maxParticipants || ""}
+                  onChange={(e) =>
+                    updateField(
+                      "maxParticipants",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  disabled={!limitMaxDelegates}
+                  placeholder="e.g. 15"
+                  className="w-full max-w-[10rem] rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-white/35 focus:border-accentGold/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                />
+              </div>
+            </div>
           </div>
           <div>
-            <label htmlFor="registrationBadge" className="mb-1 block text-xs text-white/70">
+            <label htmlFor="registrationBadge" className="mb-1.5 block text-xs text-white/70">
               Registration Badge
             </label>
             <input
